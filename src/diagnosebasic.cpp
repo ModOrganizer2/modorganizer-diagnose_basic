@@ -32,7 +32,7 @@ QString DiagnoseBasic::author() const
 
 QString DiagnoseBasic::description() const
 {
-  return tr("Problem checks unrelated to other plugins");
+  return tr("Checks for problems unrelated to other plugins");
 }
 
 VersionInfo DiagnoseBasic::version() const
