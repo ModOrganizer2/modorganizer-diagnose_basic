@@ -100,12 +100,22 @@ bool DiagnoseBasic::errorReported() const
 }
 
 
+bool DiagnoseBasic::overwriteFiles() const
+{
+  QDir dir(QCoreApplication::applicationDirPath() + "/overwrite");
+  return dir.count() != 2; // account for . and ..
+}
+
+
 std::vector<unsigned int> DiagnoseBasic::activeProblems() const
 {
   std::vector<unsigned int> result;
 
   if (errorReported()) {
     result.push_back(PROBLEM_ERRORLOG);
+  }
+  if (overwriteFiles()) {
+    result.push_back(PROBLEM_OVERWRITE);
   }
 
   return result;
@@ -116,6 +126,8 @@ QString DiagnoseBasic::shortDescription(unsigned int key) const
   switch (key) {
     case PROBLEM_ERRORLOG:
       return tr("There was an error reported recently");
+    case PROBLEM_OVERWRITE:
+      return tr("There are files in your overwrite mod");
     default:
       throw MyException(tr("invalid problem key %1").arg(key));
   }
@@ -126,6 +138,11 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
   switch (key) {
     case PROBLEM_ERRORLOG:
       return "<code>" + m_ErrorMessage.replace("\n", "<br>") + "</code>";
+    case PROBLEM_OVERWRITE:
+      return tr("Files in the <font color=\"red\"><i>Overwrite</i></font> mod are are usually files created by a foreign tool (i.e. Wrye Bash, Automatic Variants, ...).<br>"
+                "For technical reasons it's not possible to assign those files to the corresponding mod automatically, you have to deal with these "
+                "files manually.<br>Use the right-click menu on <font color=\"red\"><i>Overwrite</i></font> to create a regular mod from all the files currently in that folder or double "
+                "click it and then drag&drop files to an existing mod.");
     default:
       throw MyException(tr("invalid problem key %1").arg(key));
   }
