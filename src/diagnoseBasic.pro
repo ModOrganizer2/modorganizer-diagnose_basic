@@ -13,6 +13,7 @@ CONFIG += plugins
 CONFIG += dll
 
 DEFINES += DIAGNOSEBASIC_LIBRARY
+DEFINES += NOMINMAX
 
 SOURCES += diagnosebasic.cpp
 
@@ -24,3 +25,6 @@ include(../plugin_template.pri)
 #CONFIG += dll
 
 #DEFINES += INIEDITOR_LIBRARY
+
+OTHER_FILES += \
+    diagnosebasic.json

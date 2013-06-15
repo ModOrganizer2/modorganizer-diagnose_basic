@@ -158,4 +158,6 @@ void DiagnoseBasic::startGuidedFix(unsigned int key) const
   throw MyException(tr("invalid problem key %1").arg(key));
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(5,0,0)
 Q_EXPORT_PLUGIN2(diagnosebasic, DiagnoseBasic)
+#endif

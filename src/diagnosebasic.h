@@ -11,6 +11,9 @@ class DiagnoseBasic : public QObject, MOBase::IPlugin, MOBase::IPluginDiagnose
 {
   Q_OBJECT
   Q_INTERFACES(MOBase::IPlugin MOBase::IPluginDiagnose)
+#if QT_VERSION >= QT_VERSION_CHECK(5,0,0)
+  Q_PLUGIN_METADATA(IID "org.tannin.DiagnoseBasic" FILE "diagnosebasic.json")
+#endif
 
 public:
 
