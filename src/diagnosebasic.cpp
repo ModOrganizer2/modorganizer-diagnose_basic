@@ -5,6 +5,8 @@
 #include <QFile>
 #include <QDir>
 #include <QCoreApplication>
+#include <regex>
+#include <boost/assign.hpp>
 
 
 using namespace MOBase;
@@ -106,6 +108,50 @@ bool DiagnoseBasic::overwriteFiles() const
   return dir.count() != 2; // account for . and ..
 }
 
+bool DiagnoseBasic::invalidFontConfig() const
+{
+  if (m_MOInfo->gameInfo().type() != IGameInfo::TYPE_SKYRIM) {
+    // this check is only for skyrim
+    return false;
+  }
+
+  // files from skyrim_interface.bsa
+  static std::vector<QString> defaultFonts = boost::assign::list_of("interface\\fonts_console.swf")
+                                                                   ("interface\\fonts_en.swf");
+
+  QString configPath = m_MOInfo->resolvePath("interface/fontconfig.txt");
+  if (configPath.isEmpty()) {
+    return false;
+  }
+  QFile config(configPath);
+  if (!config.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    qDebug("failed to open %s", qPrintable(configPath));
+    return false;
+  }
+
+  std::tr1::regex exp("^fontlib \"([^\"]*)\"$");
+  while (!config.atEnd()) {
+    QByteArray row = config.readLine();
+    std::tr1::cmatch match;
+    if (std::tr1::regex_search(row.constData(), match, exp)) {
+      std::string temp = match[1];
+      QString path(temp.c_str());
+      bool isDefault = false;
+      foreach (const QString &def, defaultFonts) {
+        if (QString::compare(def, path, Qt::CaseInsensitive) == 0) {
+          isDefault = true;
+          break;
+        }
+      }
+
+      if (!isDefault && m_MOInfo->resolvePath(path).isEmpty()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 
 std::vector<unsigned int> DiagnoseBasic::activeProblems() const
 {
@@ -116,6 +162,9 @@ std::vector<unsigned int> DiagnoseBasic::activeProblems() const
   }
   if (overwriteFiles()) {
     result.push_back(PROBLEM_OVERWRITE);
+  }
+  if (invalidFontConfig()) {
+    result.push_back(PROBLEM_INVALIDFONT);
   }
 
   return result;
@@ -128,6 +177,8 @@ QString DiagnoseBasic::shortDescription(unsigned int key) const
       return tr("There was an error reported recently");
     case PROBLEM_OVERWRITE:
       return tr("There are files in your overwrite mod");
+    case PROBLEM_INVALIDFONT:
+      return tr("Your font configuration may be broken");
     default:
       throw MyException(tr("invalid problem key %1").arg(key));
   }
@@ -143,6 +194,9 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
                 "For technical reasons it's not possible to assign those files to the corresponding mod automatically, you have to deal with these "
                 "files manually.<br>Use the right-click menu on <font color=\"red\"><i>Overwrite</i></font> to create a regular mod from all the files currently in that folder or double "
                 "click it and then drag&drop files to an existing mod.");
+    case PROBLEM_INVALIDFONT:
+      return tr("Your current configuration seems to reference a font that is not installed. You may see only boxes instead of letters.<br>"
+                "The font configuration is in Data\\interface\\fontconfig.txt. Most likely you have a broken installation of a font replacer mod.");
     default:
       throw MyException(tr("invalid problem key %1").arg(key));
   }

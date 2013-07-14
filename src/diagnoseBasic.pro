@@ -21,6 +21,7 @@ HEADERS += diagnosebasic.h
 
 include(../plugin_template.pri)
 
+INCLUDEPATH +=  "$(BOOSTPATH)"
 
 #CONFIG += dll
 

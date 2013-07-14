@@ -41,11 +41,13 @@ private:
 
   bool errorReported() const;
   bool overwriteFiles() const;
+  bool invalidFontConfig() const;
 
 private:
 
   static const unsigned int PROBLEM_ERRORLOG = 1;
   static const unsigned int PROBLEM_OVERWRITE = 2;
+  static const unsigned int PROBLEM_INVALIDFONT = 3;
 
   static const unsigned int NUM_CONTEXT_ROWS = 5;
 
