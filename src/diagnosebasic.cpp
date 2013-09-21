@@ -190,10 +190,13 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
     case PROBLEM_ERRORLOG:
       return "<code>" + m_ErrorMessage.replace("\n", "<br>") + "</code>";
     case PROBLEM_OVERWRITE:
-      return tr("Files in the <font color=\"red\"><i>Overwrite</i></font> mod are are usually files created by a foreign tool (i.e. Wrye Bash, Automatic Variants, ...).<br>"
-                "For technical reasons it's not possible to assign those files to the corresponding mod automatically, you have to deal with these "
-                "files manually.<br>Use the right-click menu on <font color=\"red\"><i>Overwrite</i></font> to create a regular mod from all the files currently in that folder or double "
-                "click it and then drag&drop files to an existing mod.");
+      return tr("Files in the <font color=\"red\"><i>Overwrite</i></font> mod are are usually files created by an external tool (i.e. Wrye Bash, Automatic Variants, ...).<br>"
+                "It is advisable you empty Overwrite directory by moving those files to an existing mod. You can do this by double-clicking the <font color=\"red\"><i>Overwrite</i></font> mod and use drag&drop to move the files to a mod.<br>"
+                "Alternatively, right-click on <font color=\"red\"><i>Overwrite</i></font> and create a new regular mod from the files there.<br>"
+                "<br>"
+                "Why is this necessary? Generated files may depend on the other mods active in a profile and may thus be incompatible with a different profile (i.e. bashed patches from Wrye Bash). "
+                "On the other hand the file may be necessary in all profiles (i.e. dlc esms after cleaning with TESVEdit)<br>"
+                "This can NOT be automated you HAVE to read up on the tools you use and make an educated decision.");
     case PROBLEM_INVALIDFONT:
       return tr("Your current configuration seems to reference a font that is not installed. You may see only boxes instead of letters.<br>"
                 "The font configuration is in Data\\interface\\fontconfig.txt. Most likely you have a broken installation of a font replacer mod.");
