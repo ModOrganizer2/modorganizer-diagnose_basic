@@ -108,6 +108,12 @@ bool DiagnoseBasic::overwriteFiles() const
   return dir.count() != 2; // account for . and ..
 }
 
+bool DiagnoseBasic::nitpickInstalled() const
+{
+  QString path = m_MOInfo->resolvePath("skse/plugins/nitpick.dll");
+  return !path.isEmpty();
+}
+
 bool DiagnoseBasic::invalidFontConfig() const
 {
   if (m_MOInfo->gameInfo().type() != IGameInfo::TYPE_SKYRIM) {
@@ -166,6 +172,9 @@ std::vector<unsigned int> DiagnoseBasic::activeProblems() const
   if (invalidFontConfig()) {
     result.push_back(PROBLEM_INVALIDFONT);
   }
+  if (nitpickInstalled()) {
+    result.push_back(PROBLEM_NITPICKINSTALLED);
+  }
 
   return result;
 }
@@ -179,6 +188,8 @@ QString DiagnoseBasic::shortDescription(unsigned int key) const
       return tr("There are files in your overwrite mod");
     case PROBLEM_INVALIDFONT:
       return tr("Your font configuration may be broken");
+    case PROBLEM_NITPICKINSTALLED:
+      return tr("Nitpick installed");
     default:
       throw MyException(tr("invalid problem key %1").arg(key));
   }
@@ -200,6 +211,9 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
     case PROBLEM_INVALIDFONT:
       return tr("Your current configuration seems to reference a font that is not installed. You may see only boxes instead of letters.<br>"
                 "The font configuration is in Data\\interface\\fontconfig.txt. Most likely you have a broken installation of a font replacer mod.");
+    case PROBLEM_NITPICKINSTALLED:
+      return tr("You have the nitpick skse plugin installed. This plugin is not needed with Mod Organizer because MO already offers the same functionality. "
+                "Worse: The two solutions may conflict so it's strongly suggested you remove this plugin.");
     default:
       throw MyException(tr("invalid problem key %1").arg(key));
   }
