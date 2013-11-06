@@ -26,6 +26,7 @@ along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
 #include <QCoreApplication>
 #include <regex>
 #include <boost/assign.hpp>
+#include <functional>
 
 
 using namespace MOBase;
@@ -38,6 +39,11 @@ DiagnoseBasic::DiagnoseBasic()
 bool DiagnoseBasic::init(IOrganizer *moInfo)
 {
   m_MOInfo = moInfo;
+
+  m_MOInfo->modList()->onModStateChanged([&] (const QString &modName, IModList::ModStates) {
+                                            if (modName == "Overwrite") invalidate(); });
+  m_MOInfo->pluginList()->onRefreshed([&] () { this->invalidate(); });
+
   return true;
 }
 
@@ -58,7 +64,7 @@ QString DiagnoseBasic::description() const
 
 VersionInfo DiagnoseBasic::version() const
 {
-  return VersionInfo(1, 0, 0, VersionInfo::RELEASE_FINAL);
+  return VersionInfo(1, 1, 0, VersionInfo::RELEASE_FINAL);
 }
 
 bool DiagnoseBasic::isActive() const
@@ -134,11 +140,10 @@ bool DiagnoseBasic::nitpickInstalled() const
 }
 
 
+/// unused code to remove duplicates from a vector
 template<typename T>
 void makeUnique(std::vector<T> &vector)
 {
-//  std::vector<T>::iterator read, write;
-
   std::set<T> done;
 
   auto read = vector.begin();
@@ -159,19 +164,6 @@ bool operator<(const DiagnoseBasic::Move &lhs, const DiagnoseBasic::Move &rhs) {
   else return lhs.reference.modName < rhs.reference.modName;
 }
 
-template <typename T>
-bool vecMove(std::vector<T> &vec, size_t index, size_t target)
-{
-  qDebug("%d - %d", index, target);
-  const size_t realTarget = target > index ? target - 1 : target;
-  if (realTarget == index) {
-    return false;
-  }
-  T temp = *(vec.begin() + index);
-  vec.erase(vec.begin() + index);
-  vec.insert(vec.begin() + realTarget, temp);
-  return true;
-}
 
 bool DiagnoseBasic::assetOrder() const
 {
@@ -183,25 +175,39 @@ bool DiagnoseBasic::assetOrder() const
     } minMod;
 
     std::vector <Move> moves;
-    void operator()(std::vector<ListElement> list) {
+    void operator()(const std::vector<ListElement> &list) {
       if (list.size() == 0) {
         return;
       }
 
+      // generate a copy of list that contains each mod only once, otherwise
+      // strange things happen if a mod contains multiple esps that are mixed
+      // with esps from other mods
+      std::vector<ListElement> modList;
+      {
+        std::set<QString> includedMods;
+        foreach(const ListElement &ele, list) {
+          if (includedMods.find(ele.modName) == includedMods.end()) {
+            modList.push_back(ele);
+            includedMods.insert(ele.modName);
+          }
+        }
+      }
+
       std::vector<ListElement> sorted;
       {
-        auto maxSeqBegin = list.end();
-        auto maxSeqEnd = list.end();
+        auto maxSeqBegin = modList.end();
+        auto maxSeqEnd = modList.end();
 
         // first, determine the longest sequence of correctly sorted mods
-        auto curSeqBegin = list.begin();
-        auto curSeqEnd = list.begin();
+        auto curSeqBegin = modList.begin();
+        auto curSeqEnd = modList.begin();
 
-        auto iter = list.begin() + 1;
-        for (; iter != list.end(); ++iter) {
+        auto iter = modList.begin() + 1;
+        for (; iter != modList.end(); ++iter) {
           if (iter->modPriority < curSeqEnd->modPriority) {
             // sequence ends
-            if ((maxSeqBegin == list.end()) || ((curSeqEnd - curSeqBegin) > (maxSeqEnd - maxSeqBegin))) {
+            if ((maxSeqBegin == modList.end()) || ((curSeqEnd - curSeqBegin) > (maxSeqEnd - maxSeqBegin))) {
               maxSeqBegin = curSeqBegin;
               maxSeqEnd = iter;
             }
@@ -211,23 +217,22 @@ bool DiagnoseBasic::assetOrder() const
           }
         }
 
-        if ((maxSeqBegin == list.end()) || ((curSeqEnd - curSeqBegin) > (maxSeqEnd - maxSeqBegin))) {
+        if ((maxSeqBegin == modList.end()) || ((curSeqEnd - curSeqBegin) > (maxSeqEnd - maxSeqBegin))) {
           maxSeqBegin = curSeqBegin;
-          maxSeqEnd = list.end();
+          maxSeqEnd = modList.end();
         }
         sorted = std::vector<ListElement>(maxSeqBegin, maxSeqEnd);
-        list.erase(maxSeqBegin, maxSeqEnd);
+        modList.erase(maxSeqBegin, maxSeqEnd);
       }
 
       // now move the elements NOT in this sequence to the correct location within
-      while (list.begin() != list.end()) {
-        auto iter = list.begin();
+      while (modList.begin() != modList.end()) {
+        auto iter = modList.begin();
         bool found = false;
         auto targetIter = sorted.begin();
         for (; targetIter != sorted.end(); ++targetIter) {
           if (targetIter->pluginPriority > iter->pluginPriority) {
             moves.push_back(Move(*iter, *targetIter, Move::BEFORE));
-            qDebug("%s before %s", qPrintable(iter->modName), qPrintable(targetIter->modName));
             found = true;
             break;
           }
@@ -235,14 +240,10 @@ bool DiagnoseBasic::assetOrder() const
         if (!found) {
           // add to end!
           moves.push_back(Move(*iter, *sorted.rbegin(), Move::AFTER));
-          qDebug("%s after %s", qPrintable(iter->modName), qPrintable(sorted.rbegin()->modName));
-
         }
         sorted.insert(targetIter, *iter);
-        list.erase(iter);
+        modList.erase(iter);
       }
-
-      makeUnique(moves);
     }
   } minSorter;
 
@@ -256,8 +257,8 @@ bool DiagnoseBasic::assetOrder() const
     ele.modName = m_MOInfo->pluginList()->origin(ele.espName);
     ele.pluginPriority = m_MOInfo->pluginList()->priority(ele.espName);
     ele.modPriority = m_MOInfo->modList()->priority(ele.modName);
-    IModList::ModState state = m_MOInfo->modList()->state(ele.modName);
-    if ((state != IModList::STATE_MISSING) && (state != IModList::STATE_NOTOPTIONAL)) {
+    IModList::ModStates state = m_MOInfo->modList()->state(ele.modName);
+    if (state.testFlag(IModList::STATE_EXISTS) && !state.testFlag(IModList::STATE_ESSENTIAL)) {
       list.push_back(ele);
     }
   }

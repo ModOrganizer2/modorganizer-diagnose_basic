@@ -24,6 +24,7 @@ along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
 #include <iplugin.h>
 #include <iplugindiagnose.h>
 #include <imoinfo.h>
+#include <imodlist.h>
 
 
 class DiagnoseBasic : public QObject, MOBase::IPlugin, MOBase::IPluginDiagnose
@@ -62,7 +63,7 @@ private:
   bool overwriteFiles() const;
   bool invalidFontConfig() const;
   bool nitpickInstalled() const;
-  bool bsaOrder() const;
+  bool assetOrder() const;
 
 private:
 
@@ -70,7 +71,7 @@ private:
   static const unsigned int PROBLEM_OVERWRITE = 2;
   static const unsigned int PROBLEM_INVALIDFONT = 3;
   static const unsigned int PROBLEM_NITPICKINSTALLED = 4;
-  static const unsigned int PROBLEM_BSAORDER = 5;
+  static const unsigned int PROBLEM_ASSETORDER = 5;
 
   static const unsigned int NUM_CONTEXT_ROWS = 5;
 
