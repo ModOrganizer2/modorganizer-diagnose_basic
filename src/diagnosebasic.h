@@ -72,6 +72,7 @@ private:
   static const unsigned int PROBLEM_INVALIDFONT = 3;
   static const unsigned int PROBLEM_NITPICKINSTALLED = 4;
   static const unsigned int PROBLEM_ASSETORDER = 5;
+  static const unsigned int PROBLEM_MODLISTBACKUP = 6;
 
   static const unsigned int NUM_CONTEXT_ROWS = 5;
 
@@ -101,6 +102,7 @@ private:
   MOBase::IOrganizer *m_MOInfo;
   mutable QString m_ErrorMessage;
   mutable std::vector <Move> m_SuggestedMoves;
+  mutable QString m_NewestModlistBackup;
 
 };
 

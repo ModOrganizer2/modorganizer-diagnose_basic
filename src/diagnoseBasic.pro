@@ -4,8 +4,6 @@
 #
 #-------------------------------------------------
 
-QT       -= gui
-
 TARGET = diagnoseBasic
 TEMPLATE = lib
 
@@ -14,6 +12,9 @@ CONFIG += dll
 
 DEFINES += DIAGNOSEBASIC_LIBRARY
 DEFINES += NOMINMAX
+
+# suppress a few warnings caused by boost vs vc++ paranoia
+DEFINES += _SCL_SECURE_NO_WARNINGS
 
 SOURCES += diagnosebasic.cpp
 
