@@ -401,12 +401,12 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
                 "Worse: The two solutions may conflict so it's strongly suggested you remove this plugin.");
     case PROBLEM_ASSETORDER: {
       QString res = tr("The conflict resolution order for some mods with scripts differs from the corresponding esp. This can lead to subtle, hard to locate "
-                       "bugs. You should re-order the affected mods. The following changes should fix the issue (They are applied automatically if you click \"Fix\"):<ul>");
+                       "bugs. You should re-order the affected mods. The following changes should fix the issue:") + "<ul>";
       foreach (const Move &op, m_SuggestedMoves) {
         if (op.type == Move::BEFORE) {
-          res += "<li>" + tr("Move %1 before %2 (%3/%4 - %5/%6)").arg(op.item.modName).arg(op.reference.modName).arg(op.item.pluginPriority).arg(op.reference.pluginPriority).arg(op.item.modPriority).arg(op.reference.modPriority) + "</li>";
+          res += "<li>" + tr("Move %1 before %2").arg(op.item.modName).arg(op.reference.modName) + "</li>";
         } else {
-          res += "<li>" + tr("Move %1 after %2 (%3/%4 - %5/%6)").arg(op.item.modName).arg(op.reference.modName).arg(op.item.pluginPriority).arg(op.reference.pluginPriority).arg(op.item.modPriority).arg(op.reference.modPriority) + "</li>";
+          res += "<li>" + tr("Move %1 after %2").arg(op.item.modName).arg(op.reference.modName) + "</li>";
         }
       }
       res += "</ul>";
@@ -427,13 +427,13 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
 
 bool DiagnoseBasic::hasGuidedFix(unsigned int key) const
 {
-  return (key == PROBLEM_ASSETORDER) || (key == PROBLEM_MODLISTBACKUP);
+  return /*(key == PROBLEM_ASSETORDER) || */(key == PROBLEM_MODLISTBACKUP);
 }
 
 void DiagnoseBasic::startGuidedFix(unsigned int key) const
 {
   switch (key) {
-    case PROBLEM_ASSETORDER: {
+/*    case PROBLEM_ASSETORDER: {
       if (QMessageBox::warning(NULL, tr("Continue?"), tr("This <b>BETA</b> feature will rearrange your mods to eliminate all "
               "possible ordering conflicts. A backup of your mod list will be created. Proceed?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
         shellCopy(QStringList(m_MOInfo->profilePath() + "/modlist.txt"),
@@ -452,7 +452,7 @@ void DiagnoseBasic::startGuidedFix(unsigned int key) const
           m_MOInfo->modList()->setPriority(op.item.modName, targetPriority);
         }
       }
-    } break;
+    } break;*/
     case PROBLEM_MODLISTBACKUP: {
       QMessageBox question(QMessageBox::Question, tr("Restore backup?"),
               tr("Do you want to restore this backup or delete it?"),
