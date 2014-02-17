@@ -357,6 +357,10 @@ std::vector<unsigned int> DiagnoseBasic::activeProblems() const
     result.push_back(PROBLEM_MODLISTBACKUP);
   }
 
+  if (QFile::exists(m_MOInfo->profilePath() + "/profile_tweaks.ini")) {
+    result.push_back(PROBLEM_PROFILETWEAKS);
+  }
+
   return result;
 }
 
@@ -375,6 +379,8 @@ QString DiagnoseBasic::shortDescription(unsigned int key) const
       return tr("Potential Mod order problem");
     case PROBLEM_MODLISTBACKUP:
       return tr("Modlist backup exists");
+    case PROBLEM_PROFILETWEAKS:
+      return tr("Ini Tweaks overwritten");
     default:
       throw MyException(tr("invalid problem key %1").arg(key));
   }
@@ -420,6 +426,16 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
                 "This backup contains both the info which mods are enabled and the ordering.<br>"
                 "You can restore that backup here.").arg(time.toString());
     } break;
+    case PROBLEM_PROFILETWEAKS: {
+      QString fileContent = readFileText(m_MOInfo->profilePath() + "/profile_tweaks.ini");
+      return tr("Settings provided in ini tweaks have been overwritten in-game or in an applications.<br>"
+                "These overwrites are stored in a separate file (<i>profile_tweaks.ini</i> within the profile directory)<br>"
+                "to keep ini-tweaks in their original state but you should really get rid of this file as there is<br>"
+                "no tool support in MO to work on it. <br>"
+                "Advice: Copy settings you want to keep to an appropriate ini tweak, then delete <i>profile_tweaks.ini</i>.<br>"
+                "Hitting the <i>Fix</i> button will delete that file")
+              + "<hr><i>profile_tweaks.ini:</i><pre>" + fileContent + "</pre>";
+    } break;
     default:
       throw MyException(tr("invalid problem key %1").arg(key));
   }
@@ -427,7 +443,7 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
 
 bool DiagnoseBasic::hasGuidedFix(unsigned int key) const
 {
-  return /*(key == PROBLEM_ASSETORDER) || */(key == PROBLEM_MODLISTBACKUP);
+  return /*(key == PROBLEM_ASSETORDER) || */(key == PROBLEM_MODLISTBACKUP) || (key == PROBLEM_PROFILETWEAKS);
 }
 
 void DiagnoseBasic::startGuidedFix(unsigned int key) const
@@ -467,6 +483,9 @@ void DiagnoseBasic::startGuidedFix(unsigned int key) const
       } else if (question.result() == QMessageBox::No) {
         shellDelete(QStringList(m_MOInfo->profilePath() + "/" + m_NewestModlistBackup));
       }
+    } break;
+    case PROBLEM_PROFILETWEAKS: {
+      shellDeleteQuiet(m_MOInfo->profilePath() + "/profile_tweaks.ini");
     } break;
     default: throw MyException(tr("invalid problem key %1").arg(key));
   }
