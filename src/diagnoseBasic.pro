@@ -10,6 +10,10 @@ TEMPLATE = lib
 CONFIG += plugins
 CONFIG += dll
 
+contains(QT_VERSION, "^5.*") {
+	QT += widgets
+}
+
 DEFINES += DIAGNOSEBASIC_LIBRARY
 DEFINES += NOMINMAX
 
