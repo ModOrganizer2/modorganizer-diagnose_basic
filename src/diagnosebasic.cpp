@@ -1,21 +1,21 @@
 /*
-Copyright (C) 2013 Sebastian Herbord. All rights reserved.
-
-This file is part of the basic diagnosis plugin for Mod Organizer
-
-This plugin is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This plugin is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright (C) 2013 Sebastian Herbord. All rights reserved.
+ *
+ * This file is part of the basic diagnosis plugin for Mod Organizer
+ *
+ * This plugin is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This plugin is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "diagnosebasic.h"
 #include <report.h>
@@ -27,8 +27,17 @@ along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
 #include <QMessageBox>
 #include <QDateTime>
 #include <regex>
-#include <boost/assign.hpp>
 #include <functional>
+#include <vector>
+#include <algorithm>
+
+#pragma warning( push, 2 )
+#include <boost/assign.hpp>
+#include <boost/graph/graph_traits.hpp>
+#include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/topological_sort.hpp>
+#include <boost/graph/connected_components.hpp>
+#pragma warning( pop )
 
 
 using namespace MOBase;
@@ -43,7 +52,8 @@ bool DiagnoseBasic::init(IOrganizer *moInfo)
   m_MOInfo = moInfo;
 
   m_MOInfo->modList()->onModStateChanged([&] (const QString &modName, IModList::ModStates) {
-                                            if (modName == "Overwrite") invalidate(); });
+                                           if (modName == "Overwrite") invalidate();
+                                         });
   m_MOInfo->pluginList()->onRefreshed([&] () { this->invalidate(); });
 
   return true;
@@ -132,12 +142,14 @@ bool DiagnoseBasic::errorReported() const
 bool DiagnoseBasic::overwriteFiles() const
 {
   QDir dir(QCoreApplication::applicationDirPath() + "/overwrite");
+
   return dir.count() != 2; // account for . and ..
 }
 
 bool DiagnoseBasic::nitpickInstalled() const
 {
   QString path = m_MOInfo->resolvePath("skse/plugins/nitpick.dll");
+
   return !path.isEmpty();
 }
 
@@ -150,6 +162,7 @@ void makeUnique(std::vector<T> &vector)
 
   auto read = vector.begin();
   auto write = vector.begin();
+
   for (; read != vector.end(); ++read) {
     if (done.insert(*read).second) {
       *write = *read;
@@ -158,106 +171,144 @@ void makeUnique(std::vector<T> &vector)
   }
 
   vector.erase(write, vector.end());
-
 }
 
-bool operator<(const DiagnoseBasic::Move &lhs, const DiagnoseBasic::Move &rhs) {
+bool operator<(const DiagnoseBasic::Move &lhs, const DiagnoseBasic::Move &rhs)
+{
   if (lhs.item.modName != rhs.item.modName) return lhs.item.modName < rhs.item.modName;
   else return lhs.reference.modName < rhs.reference.modName;
 }
 
 
-bool DiagnoseBasic::assetOrder() const
+void DiagnoseBasic::topoSort(std::vector<DiagnoseBasic::ListElement> &list) const
 {
-  struct Sorter {
-    struct {
-      int operator()(const ListElement &lhs, const ListElement &rhs) {
-        return lhs.modPriority < rhs.modPriority;
-      }
-    } minMod;
+  typedef std::pair<int, int> Edge;
+  std::vector<Edge> before;
 
-    std::vector <Move> moves;
-    void operator()(const std::vector<ListElement> &list) {
-      if (list.size() == 0) {
-        return;
-      }
-
-      // generate a copy of list that contains each mod only once, otherwise
-      // strange things happen if a mod contains multiple esps that are mixed
-      // with esps from other mods
-      std::vector<ListElement> modList;
-      {
-        std::set<QString> includedMods;
-        foreach(const ListElement &ele, list) {
-          if (includedMods.find(ele.modName) == includedMods.end()) {
-            modList.push_back(ele);
-            includedMods.insert(ele.modName);
-          }
-        }
-      }
-
-      std::vector<ListElement> sorted;
-      {
-        auto maxSeqBegin = modList.end();
-        auto maxSeqEnd = modList.end();
-
-        // first, determine the longest sequence of correctly sorted mods
-        auto curSeqBegin = modList.begin();
-        auto curSeqEnd = modList.begin();
-
-        auto iter = modList.begin() + 1;
-        for (; iter != modList.end(); ++iter) {
-          if (iter->modPriority < curSeqEnd->modPriority) {
-            // sequence ends
-            if ((maxSeqBegin == modList.end()) || ((curSeqEnd - curSeqBegin) > (maxSeqEnd - maxSeqBegin))) {
-              maxSeqBegin = curSeqBegin;
-              maxSeqEnd = iter;
-            }
-            curSeqBegin = curSeqEnd = iter;
-          } else {
-            curSeqEnd = iter;
-          }
-        }
-
-        if ((maxSeqBegin == modList.end()) || ((curSeqEnd - curSeqBegin) > (maxSeqEnd - maxSeqBegin))) {
-          maxSeqBegin = curSeqBegin;
-          maxSeqEnd = modList.end();
-        }
-        sorted = std::vector<ListElement>(maxSeqBegin, maxSeqEnd);
-        modList.erase(maxSeqBegin, maxSeqEnd);
-      }
-
-      // now move the elements NOT in this sequence to the correct location within
-      while (modList.begin() != modList.end()) {
-        auto iter = modList.begin();
-        bool found = false;
-        auto targetIter = sorted.begin();
-        for (; targetIter != sorted.end(); ++targetIter) {
-          if (targetIter->pluginPriority > iter->pluginPriority) {
-            moves.push_back(Move(*iter, *targetIter, Move::BEFORE));
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          // add to end!
-          moves.push_back(Move(*iter, *sorted.rbegin(), Move::AFTER));
-        }
-        sorted.insert(targetIter, *iter);
-        modList.erase(iter);
+  // create a graph with edges where each edge tells us that mod a has to come before mod b
+  // this takes into account only pairs of mods that actually have conflicting scripts
+  for (unsigned i = 0; i < list.size(); ++i) {
+    for (unsigned j = i + 1; j < list.size(); ++j) {
+      if (!(list[i].relevantScripts & list[j].relevantScripts).empty()) {
+        before.push_back(Edge(i, j));
       }
     }
-  } minSorter;
+  }
 
-  std::vector<ListElement> list;
+  {
+    typedef boost::adjacency_list<boost::vecS,boost::vecS, boost::bidirectionalS, boost::property<boost::vertex_color_t, boost::default_color_type>> Graph;
+    using namespace boost;
+    Graph graph(before.begin(), before.end(), list.size());
+    typedef graph_traits<Graph>::vertex_descriptor Vertex;
+    typedef std::list<Vertex> Order;
+
+    // figure out unconnected components of the graph.
+    std::vector<int> component(num_vertices(graph));
+    connected_components(graph, &component[0]);
+
+    for (int i = 0; i != component.size(); ++i) {
+      list[i].sortGroup = component[i];
+    }
+
+    Order order;
+    // do the actual sorting. This sorts the graph in full though the order between unconnected components doesn't
+    // really matter to us
+    boost::topological_sort(graph, std::front_inserter(order));
+  }
+}
+
+
+void DiagnoseBasic::Sorter::sortGroup(std::vector<ListElement> modList)
+{
+  std::vector<ListElement> sorted;
+  {
+    auto maxSeqBegin = modList.end();
+    auto maxSeqEnd = modList.end();
+
+    // first, determine the longest sequence of correctly sorted mods
+    auto curSeqBegin = modList.begin();
+    auto curSeqEnd = modList.begin();
+
+    auto iter = modList.begin() + 1;
+    for (; iter != modList.end(); ++iter) {
+      if (iter->modPriority < curSeqEnd->modPriority) {
+        // sequence ends
+        if ((maxSeqBegin == modList.end()) || ((curSeqEnd - curSeqBegin) > (maxSeqEnd - maxSeqBegin))) {
+          maxSeqBegin = curSeqBegin;
+          maxSeqEnd = iter;
+        }
+        curSeqBegin = curSeqEnd = iter;
+      } else {
+        curSeqEnd = iter;
+      }
+    }
+
+    if ((maxSeqBegin == modList.end()) || ((curSeqEnd - curSeqBegin) > (maxSeqEnd - maxSeqBegin))) {
+      maxSeqBegin = curSeqBegin;
+      maxSeqEnd = modList.end();
+    }
+    sorted = std::vector<ListElement>(maxSeqBegin, maxSeqEnd);
+    modList.erase(maxSeqBegin, maxSeqEnd);
+  }
+
+  // now move the elements NOT in this sequence to the correct location within
+  while (modList.begin() != modList.end()) {
+    auto iter = modList.begin();
+    bool found = false;
+    auto targetIter = sorted.begin();
+    for (; targetIter != sorted.end(); ++targetIter) {
+      if (targetIter->pluginPriority > iter->pluginPriority) {
+        moves.push_back(Move(*iter, *targetIter, Move::BEFORE));
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      // add to end!
+      moves.push_back(Move(*iter, *sorted.rbegin(), Move::AFTER));
+    }
+    sorted.insert(targetIter, *iter);
+    modList.erase(iter);
+  }
+}
+
+void DiagnoseBasic::Sorter::operator()(std::vector<ListElement> modList)
+{
+  if (modList.size() == 0) {
+    return;
+  }
+
+  int currentGroup = 0;
+  while (true) {
+    std::vector<ListElement> filtered;
+    std::copy_if(modList.begin(), modList.end(), std::back_inserter(filtered),
+                 [currentGroup] (const ListElement &ele) -> bool { return ele.sortGroup == currentGroup; });
+    if (filtered.size() == 0) {
+      break;
+    } else if (filtered.size() == 1) {
+      // skip if there is only one element, there can't be a necessary move
+      continue;
+    }
+    sortGroup(filtered);
+    ++currentGroup;
+  }
+}
+
+bool DiagnoseBasic::assetOrder() const
+{
+  Sorter minSorter;
+
+  std::vector<ListElement> modList;
 
   // list of mods containing conflicted scripts. We care only for those
-  std::set<QString> scriptMods;
-  foreach (const IOrganizer::FileInfo &pex, m_MOInfo->findFileInfos("scripts",
-            [] (const IOrganizer::FileInfo &file) -> bool { return file.filePath.endsWith(".pex", Qt::CaseInsensitive); })) {
-    if (pex.origins.size() > 1) {
-      foreach (const QString &origin, pex.origins) {
-        scriptMods.insert(origin);
+  std::map<QString, QSet<QString>> scriptMods;
+  foreach (const IOrganizer::FileInfo & pex, m_MOInfo->findFileInfos("scripts",
+        [] (const IOrganizer::FileInfo &file) -> bool { return file.filePath.endsWith(".pex", Qt::CaseInsensitive); })) {
+    QStringList origins = pex.origins;
+    origins.removeAll("data"); // ignore files in base directory
+    if (origins.size() > 1) {
+      foreach(const QString &origin, origins) {
+        scriptMods[origin].insert(pex.filePath);
       }
     }
   }
@@ -266,22 +317,42 @@ bool DiagnoseBasic::assetOrder() const
   QStringList esps = m_MOInfo->findFiles("", [] (const QString &fileName) -> bool { return fileName.endsWith(".esp", Qt::CaseInsensitive); });
   foreach (const QString &esp, esps) {
     ListElement ele;
+
     ele.espName = QFileInfo(esp).fileName();
     ele.modName = m_MOInfo->pluginList()->origin(ele.espName);
     ele.pluginPriority = m_MOInfo->pluginList()->priority(ele.espName);
     ele.modPriority = m_MOInfo->modList()->priority(ele.modName);
     IModList::ModStates state = m_MOInfo->modList()->state(ele.modName);
+    auto iter = scriptMods.find(ele.modName);
     if (state.testFlag(IModList::STATE_EXISTS) && !state.testFlag(IModList::STATE_ESSENTIAL) &&
-        (scriptMods.find(ele.modName) != scriptMods.end())) {
-      list.push_back(ele);
+        (iter != scriptMods.end())) {
+      ele.relevantScripts = iter->second;
+      modList.push_back(ele);
+    }
+  }
+
+  // generate a copy of list that contains each mod only once, otherwise
+  // strange things happen if a mod contains multiple esps that are mixed
+  // with esps from other mods
+  std::vector<ListElement> distinctModList;
+  {
+    std::set<QString> includedMods;
+    foreach(const ListElement &ele, modList) {
+      if (includedMods.find(ele.modName) == includedMods.end()) {
+        distinctModList.push_back(ele);
+        includedMods.insert(ele.modName);
+      }
     }
   }
 
   // sort the list by plugin priority
-  std::sort(list.begin(), list.end(), [] (const ListElement &lhs, const ListElement &rhs) -> bool { return lhs.pluginPriority < rhs.pluginPriority; });
+  std::sort(distinctModList.begin(), distinctModList.end(),
+            [] (const ListElement &lhs, const ListElement &rhs) -> bool { return lhs.pluginPriority < rhs.pluginPriority; });
+
+  topoSort(distinctModList);
 
   // now determine the moves necessary to bring the mod list into this order
-  minSorter(list);
+  minSorter(distinctModList);
   m_SuggestedMoves = minSorter.moves;
 
   return m_SuggestedMoves.size() > 0;
@@ -296,7 +367,7 @@ bool DiagnoseBasic::invalidFontConfig() const
 
   // files from skyrim_interface.bsa
   static std::vector<QString> defaultFonts = boost::assign::list_of("interface\\fonts_console.swf")
-                                                                   ("interface\\fonts_en.swf");
+                                               ("interface\\fonts_en.swf");
 
   QString configPath = m_MOInfo->resolvePath("interface/fontconfig.txt");
   if (configPath.isEmpty()) {
@@ -316,7 +387,7 @@ bool DiagnoseBasic::invalidFontConfig() const
       std::string temp = match[1];
       QString path(temp.c_str());
       bool isDefault = false;
-      foreach (const QString &def, defaultFonts) {
+      foreach(const QString &def, defaultFonts) {
         if (QString::compare(def, path, Qt::CaseInsensitive) == 0) {
           isDefault = true;
           break;
@@ -406,9 +477,12 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
       return tr("You have the nitpick skse plugin installed. This plugin is not needed with Mod Organizer because MO already offers the same functionality. "
                 "Worse: The two solutions may conflict so it's strongly suggested you remove this plugin.");
     case PROBLEM_ASSETORDER: {
-      QString res = tr("The conflict resolution order for some mods with scripts differs from the corresponding esp. This can lead to subtle, hard to locate "
-                       "bugs. You should re-order the affected mods. The following changes should fix the issue:") + "<ul>";
-      foreach (const Move &op, m_SuggestedMoves) {
+      QString res = tr("The conflict resolution order for some mods containing scripts differs from that of the corresponding esp.<br>"
+                       "This may lead to subtle, hard to locate bugs. You should re-order the affected mods (left list!).<br>"
+                       "There is no way to reliably know if these changes are necessary but its definitively safer.<br>"
+                       "If someone suggested you ignore this message, please give them a proper slapping from me. <b>Do not ignore this warning</b><br>"
+                       "The following changes should fix the issue:") + "<ul>";
+      foreach(const Move &op, m_SuggestedMoves) {
         if (op.type == Move::BEFORE) {
           res += "<li>" + tr("Move %1 before %2").arg(op.item.modName).arg(op.reference.modName) + "</li>";
         } else {
@@ -434,7 +508,7 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
                 "no tool support in MO to work on it. <br>"
                 "Advice: Copy settings you want to keep to an appropriate ini tweak, then delete <i>profile_tweaks.ini</i>.<br>"
                 "Hitting the <i>Fix</i> button will delete that file")
-              + "<hr><i>profile_tweaks.ini:</i><pre>" + fileContent + "</pre>";
+             + "<hr><i>profile_tweaks.ini:</i><pre>" + fileContent + "</pre>";
     } break;
     default:
       throw MyException(tr("invalid problem key %1").arg(key));
@@ -443,36 +517,36 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
 
 bool DiagnoseBasic::hasGuidedFix(unsigned int key) const
 {
-  return /*(key == PROBLEM_ASSETORDER) || */(key == PROBLEM_MODLISTBACKUP) || (key == PROBLEM_PROFILETWEAKS);
+  return /*(key == PROBLEM_ASSETORDER) || */ (key == PROBLEM_MODLISTBACKUP) || (key == PROBLEM_PROFILETWEAKS);
 }
 
 void DiagnoseBasic::startGuidedFix(unsigned int key) const
 {
   switch (key) {
 /*    case PROBLEM_ASSETORDER: {
-      if (QMessageBox::warning(NULL, tr("Continue?"), tr("This <b>BETA</b> feature will rearrange your mods to eliminate all "
-              "possible ordering conflicts. A backup of your mod list will be created. Proceed?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
-        shellCopy(QStringList(m_MOInfo->profilePath() + "/modlist.txt"),
-                  QStringList(m_MOInfo->profilePath() + "/modlist.txt_backup_" + QString("%1").arg(QDateTime::currentDateTime().toTime_t())));
-        foreach (const Move &op, m_SuggestedMoves) {
-          int oldPriority = m_MOInfo->modList()->priority(op.item.modName);
-          int targetPriority = -1;
-          if (op.type == Move::BEFORE) {
-            targetPriority = m_MOInfo->modList()->priority(op.reference.modName);
-          } else {
-            targetPriority = m_MOInfo->modList()->priority(op.reference.modName) + 1;
-          }
-          if (oldPriority < targetPriority) {
-            --targetPriority;
-          }
-          m_MOInfo->modList()->setPriority(op.item.modName, targetPriority);
-        }
-      }
-    } break;*/
+ *    if (QMessageBox::warning(NULL, tr("Continue?"), tr("This <b>BETA</b> feature will rearrange your mods to eliminate all "
+ *            "possible ordering conflicts. A backup of your mod list will be created. Proceed?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
+ *      shellCopy(QStringList(m_MOInfo->profilePath() + "/modlist.txt"),
+ *                QStringList(m_MOInfo->profilePath() + "/modlist.txt_backup_" + QString("%1").arg(QDateTime::currentDateTime().toTime_t())));
+ *      foreach (const Move &op, m_SuggestedMoves) {
+ *        int oldPriority = m_MOInfo->modList()->priority(op.item.modName);
+ *        int targetPriority = -1;
+ *        if (op.type == Move::BEFORE) {
+ *          targetPriority = m_MOInfo->modList()->priority(op.reference.modName);
+ *        } else {
+ *          targetPriority = m_MOInfo->modList()->priority(op.reference.modName) + 1;
+ *        }
+ *        if (oldPriority < targetPriority) {
+ *          --targetPriority;
+ *        }
+ *        m_MOInfo->modList()->setPriority(op.item.modName, targetPriority);
+ *      }
+ *    }
+ *  } break;*/
     case PROBLEM_MODLISTBACKUP: {
       QMessageBox question(QMessageBox::Question, tr("Restore backup?"),
-              tr("Do you want to restore this backup or delete it?"),
-              QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+                           tr("Do you want to restore this backup or delete it?"),
+                           QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
       question.setButtonText(QMessageBox::Yes, tr("Restore"));
       question.setButtonText(QMessageBox::No, tr("Delete"));
 
@@ -491,6 +565,6 @@ void DiagnoseBasic::startGuidedFix(unsigned int key) const
   }
 }
 
-#if QT_VERSION < QT_VERSION_CHECK(5,0,0)
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 Q_EXPORT_PLUGIN2(diagnosebasic, DiagnoseBasic)
 #endif

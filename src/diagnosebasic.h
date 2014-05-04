@@ -25,6 +25,8 @@ along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
 #include <iplugindiagnose.h>
 #include <imoinfo.h>
 #include <imodlist.h>
+#include <QString>
+#include <QSet>
 
 
 class DiagnoseBasic : public QObject, MOBase::IPlugin, MOBase::IPluginDiagnose
@@ -84,6 +86,9 @@ private:
     QString modName;
     int pluginPriority;
     int modPriority;
+    int sortPriority;
+    int sortGroup;
+    QSet<QString> relevantScripts;
   };
 
   struct Move {
@@ -96,7 +101,28 @@ private:
     Move(const ListElement &initItem, const ListElement &initReference, EType initType)
       : item(initItem), reference(initReference), type(initType) {}
   };
+
+  struct Sorter {
+    struct {
+      int operator()(const ListElement &lhs, const ListElement &rhs)
+      {
+        return lhs.modPriority < rhs.modPriority;
+      }
+    } minMod;
+
+    std::vector<Move> moves;
+
+    void operator()(std::vector<ListElement> modList);
+  private:
+    void sortGroup(std::vector<ListElement> modList);
+  };
+
+
   friend bool operator<(const Move &lhs, const Move &rhs);
+
+private:
+
+  void topoSort(std::vector<ListElement> &list) const;
 
 private:
 
