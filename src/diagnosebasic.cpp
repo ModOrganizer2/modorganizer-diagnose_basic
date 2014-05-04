@@ -283,6 +283,7 @@ void DiagnoseBasic::Sorter::operator()(std::vector<ListElement> modList)
     std::vector<ListElement> filtered;
     std::copy_if(modList.begin(), modList.end(), std::back_inserter(filtered),
                  [currentGroup] (const ListElement &ele) -> bool { return ele.sortGroup == currentGroup; });
+    ++currentGroup;
     if (filtered.size() == 0) {
       break;
     } else if (filtered.size() == 1) {
@@ -290,7 +291,6 @@ void DiagnoseBasic::Sorter::operator()(std::vector<ListElement> modList)
       continue;
     }
     sortGroup(filtered);
-    ++currentGroup;
   }
 }
 
