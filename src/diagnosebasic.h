@@ -74,7 +74,6 @@ private:
   static const unsigned int PROBLEM_INVALIDFONT = 3;
   static const unsigned int PROBLEM_NITPICKINSTALLED = 4;
   static const unsigned int PROBLEM_ASSETORDER = 5;
-  static const unsigned int PROBLEM_MODLISTBACKUP = 6;
   static const unsigned int PROBLEM_PROFILETWEAKS = 7;
 
   static const unsigned int NUM_CONTEXT_ROWS = 5;
@@ -86,7 +85,6 @@ private:
     QString modName;
     int pluginPriority;
     int modPriority;
-    int sortPriority;
     int sortGroup;
     QSet<QString> relevantScripts;
   };

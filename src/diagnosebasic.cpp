@@ -202,10 +202,9 @@ void DiagnoseBasic::topoSort(std::vector<DiagnoseBasic::ListElement> &list) cons
     typedef graph_traits<Graph>::vertex_descriptor Vertex;
     typedef std::list<Vertex> Order;
 
-    // figure out unconnected components of the graph.
+    // figure out disconnected components of the graph
     std::vector<int> component(num_vertices(graph));
     connected_components(graph, &component[0]);
-
     for (int i = 0; i != component.size(); ++i) {
       list[i].sortGroup = component[i];
     }
@@ -336,6 +335,10 @@ bool DiagnoseBasic::assetOrder() const
   // with esps from other mods
   std::vector<ListElement> distinctModList;
   {
+    // sort the input list so we get predictable results
+    std::sort(modList.begin(), modList.end(),
+              [] (const ListElement &lhs, const ListElement &rhs) -> bool { return lhs.pluginPriority < rhs.pluginPriority; });
+
     std::set<QString> includedMods;
     foreach(const ListElement &ele, modList) {
       if (includedMods.find(ele.modName) == includedMods.end()) {
@@ -345,7 +348,7 @@ bool DiagnoseBasic::assetOrder() const
     }
   }
 
-  // sort the list by plugin priority
+  // sort the list by plugin priority. This step is probably unnecessary as the list was already sorted when we removed duplicates
   std::sort(distinctModList.begin(), distinctModList.end(),
             [] (const ListElement &lhs, const ListElement &rhs) -> bool { return lhs.pluginPriority < rhs.pluginPriority; });
 
@@ -422,12 +425,6 @@ std::vector<unsigned int> DiagnoseBasic::activeProblems() const
   if (assetOrder()) {
     result.push_back(PROBLEM_ASSETORDER);
   }
-  QStringList backups = QDir(m_MOInfo->profilePath()).entryList(QStringList() << "modlist.txt_backup_*");
-  if (backups.size() > 0) {
-    m_NewestModlistBackup = backups.last();
-    result.push_back(PROBLEM_MODLISTBACKUP);
-  }
-
   if (QFile::exists(m_MOInfo->profilePath() + "/profile_tweaks.ini")) {
     result.push_back(PROBLEM_PROFILETWEAKS);
   }
@@ -448,8 +445,6 @@ QString DiagnoseBasic::shortDescription(unsigned int key) const
       return tr("Nitpick installed");
     case PROBLEM_ASSETORDER:
       return tr("Potential Mod order problem");
-    case PROBLEM_MODLISTBACKUP:
-      return tr("Modlist backup exists");
     case PROBLEM_PROFILETWEAKS:
       return tr("Ini Tweaks overwritten");
     default:
@@ -479,9 +474,9 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
     case PROBLEM_ASSETORDER: {
       QString res = tr("The conflict resolution order for some mods containing scripts differs from that of the corresponding esp.<br>"
                        "This may lead to subtle, hard to locate bugs. You should re-order the affected mods (left list!).<br>"
-                       "There is no way to reliably know if these changes are necessary but its definitively safer.<br>"
+                       "There is no way to reliably know if each of these changes is absolutely necessary but its definitively safer.<br>"
                        "If someone suggested you ignore this message, please give them a proper slapping from me. <b>Do not ignore this warning</b><br>"
-                       "The following changes should fix the issue:") + "<ul>";
+                       "The following changes should prevent these kinds of errors:") + "<ul>";
       foreach(const Move &op, m_SuggestedMoves) {
         if (op.type == Move::BEFORE) {
           res += "<li>" + tr("Move %1 before %2").arg(op.item.modName).arg(op.reference.modName) + "</li>";
@@ -491,14 +486,6 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
       }
       res += "</ul>";
       return res;
-    } break;
-    case PROBLEM_MODLISTBACKUP: {
-      uint timestamp = m_NewestModlistBackup.right(10).toULong();
-      QDateTime time;
-      time.setTime_t(timestamp);
-      return tr("A previous operation created a backup of your mod list on %1.<br>"
-                "This backup contains both the info which mods are enabled and the ordering.<br>"
-                "You can restore that backup here.").arg(time.toString());
     } break;
     case PROBLEM_PROFILETWEAKS: {
       QString fileContent = readFileText(m_MOInfo->profilePath() + "/profile_tweaks.ini");
@@ -517,51 +504,35 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
 
 bool DiagnoseBasic::hasGuidedFix(unsigned int key) const
 {
-  return /*(key == PROBLEM_ASSETORDER) || */ (key == PROBLEM_MODLISTBACKUP) || (key == PROBLEM_PROFILETWEAKS);
+  return (key == PROBLEM_ASSETORDER) || (key == PROBLEM_PROFILETWEAKS);
 }
 
 void DiagnoseBasic::startGuidedFix(unsigned int key) const
 {
   switch (key) {
-/*    case PROBLEM_ASSETORDER: {
- *    if (QMessageBox::warning(NULL, tr("Continue?"), tr("This <b>BETA</b> feature will rearrange your mods to eliminate all "
- *            "possible ordering conflicts. A backup of your mod list will be created. Proceed?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
- *      shellCopy(QStringList(m_MOInfo->profilePath() + "/modlist.txt"),
- *                QStringList(m_MOInfo->profilePath() + "/modlist.txt_backup_" + QString("%1").arg(QDateTime::currentDateTime().toTime_t())));
- *      foreach (const Move &op, m_SuggestedMoves) {
- *        int oldPriority = m_MOInfo->modList()->priority(op.item.modName);
- *        int targetPriority = -1;
- *        if (op.type == Move::BEFORE) {
- *          targetPriority = m_MOInfo->modList()->priority(op.reference.modName);
- *        } else {
- *          targetPriority = m_MOInfo->modList()->priority(op.reference.modName) + 1;
- *        }
- *        if (oldPriority < targetPriority) {
- *          --targetPriority;
- *        }
- *        m_MOInfo->modList()->setPriority(op.item.modName, targetPriority);
- *      }
- *    }
- *  } break;*/
-    case PROBLEM_MODLISTBACKUP: {
-      QMessageBox question(QMessageBox::Question, tr("Restore backup?"),
-                           tr("Do you want to restore this backup or delete it?"),
-                           QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-      question.setButtonText(QMessageBox::Yes, tr("Restore"));
-      question.setButtonText(QMessageBox::No, tr("Delete"));
-
-      question.exec();
-      if (question.result() == QMessageBox::Yes) {
-        shellMove(QStringList(m_MOInfo->profilePath() + "/" + m_NewestModlistBackup), QStringList(m_MOInfo->profilePath() + "/modlist.txt"));
-        m_MOInfo->refreshModList(false);
-      } else if (question.result() == QMessageBox::No) {
-        shellDelete(QStringList(m_MOInfo->profilePath() + "/" + m_NewestModlistBackup));
+    case PROBLEM_ASSETORDER: {
+      if (QMessageBox::warning(NULL, tr("Continue?"), tr("This <b>BETA</b> feature will rearrange your mods to eliminate all "
+              "possible ordering conflicts. Proceed?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
+        foreach (const Move &op, m_SuggestedMoves) {
+          int oldPriority = m_MOInfo->modList()->priority(op.item.modName);
+          int targetPriority = -1;
+          if (op.type == Move::BEFORE) {
+            targetPriority = m_MOInfo->modList()->priority(op.reference.modName);
+          } else {
+            targetPriority = m_MOInfo->modList()->priority(op.reference.modName) + 1;
+          }
+          if (oldPriority < targetPriority) {
+            --targetPriority;
+          }
+          m_MOInfo->modList()->setPriority(op.item.modName, targetPriority);
+        }
       }
     } break;
     case PROBLEM_PROFILETWEAKS: {
       shellDeleteQuiet(m_MOInfo->profilePath() + "/profile_tweaks.ini");
     } break;
-    default: throw MyException(tr("invalid problem key %1").arg(key));
+    default:
+      throw MyException(tr("invalid problem key %1").arg(key));
   }
 }
 
