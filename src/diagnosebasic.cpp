@@ -23,6 +23,7 @@
 #include <QtPlugin>
 #include <QFile>
 #include <QDir>
+#include <QDebug>
 #include <QCoreApplication>
 #include <QMessageBox>
 #include <QDateTime>
@@ -210,7 +211,7 @@ void DiagnoseBasic::topoSort(std::vector<DiagnoseBasic::ListElement> &list) cons
     }
 
     Order order;
-    // do the actual sorting. This sorts the graph in full though the order between unconnected components doesn't
+    // do the actual sorting. This sorts the graph in full although the order between unconnected components doesn't
     // really matter to us
     boost::topological_sort(graph, std::front_inserter(order));
   }
@@ -223,22 +224,35 @@ void DiagnoseBasic::Sorter::sortGroup(std::vector<ListElement> modList)
   {
     auto maxSeqBegin = modList.end();
     auto maxSeqEnd = modList.end();
+    int maxSeqAvoidMove = 0;
 
     // first, determine the longest sequence of correctly sorted mods
     auto curSeqBegin = modList.begin();
     auto curSeqEnd = modList.begin();
 
+    int curSeqAvoidMove = 0;
+
     auto iter = modList.begin() + 1;
     for (; iter != modList.end(); ++iter) {
       if (iter->modPriority < curSeqEnd->modPriority) {
         // sequence ends
-        if ((maxSeqBegin == modList.end()) || ((curSeqEnd - curSeqBegin) > (maxSeqEnd - maxSeqBegin))) {
+        // use this sequence of correctly sorted mods if it is longer than the previously longest
+        // sequence and doesn't have fewer mods that don't want to move. Thus the need for mods to
+        // stay in place beats our gole to have the minimal number of moves
+        if ((maxSeqBegin == modList.end())
+            || (((curSeqEnd - curSeqBegin) > (maxSeqEnd - maxSeqBegin))
+                && (curSeqAvoidMove >= maxSeqAvoidMove))) {
           maxSeqBegin = curSeqBegin;
           maxSeqEnd = iter;
+          maxSeqAvoidMove = curSeqAvoidMove;
         }
         curSeqBegin = curSeqEnd = iter;
+        curSeqAvoidMove = 0;
       } else {
         curSeqEnd = iter;
+        if (iter->avoidMove) {
+          ++curSeqAvoidMove;
+        }
       }
     }
 
@@ -313,7 +327,9 @@ bool DiagnoseBasic::assetOrder() const
   }
 
   // produce a list with the information we need: plugin, mod and the priority for each
-  QStringList esps = m_MOInfo->findFiles("", [] (const QString &fileName) -> bool { return fileName.endsWith(".esp", Qt::CaseInsensitive); });
+  QStringList esps = m_MOInfo->findFiles("",
+      [] (const QString &fileName) -> bool { return fileName.endsWith(".esp", Qt::CaseInsensitive)
+                                                  || fileName.endsWith(".esm", Qt::CaseInsensitive); });
   foreach (const QString &esp, esps) {
     ListElement ele;
 
@@ -322,9 +338,10 @@ bool DiagnoseBasic::assetOrder() const
     ele.pluginPriority = m_MOInfo->pluginList()->priority(ele.espName);
     ele.modPriority = m_MOInfo->modList()->priority(ele.modName);
     IModList::ModStates state = m_MOInfo->modList()->state(ele.modName);
+    ele.avoidMove = state.testFlag(IModList::STATE_ESSENTIAL);
     auto iter = scriptMods.find(ele.modName);
-    if (state.testFlag(IModList::STATE_EXISTS) && !state.testFlag(IModList::STATE_ESSENTIAL) &&
-        (iter != scriptMods.end())) {
+    if (state.testFlag(IModList::STATE_EXISTS)
+        && (iter != scriptMods.end())) {
       ele.relevantScripts = iter->second;
       modList.push_back(ele);
     }

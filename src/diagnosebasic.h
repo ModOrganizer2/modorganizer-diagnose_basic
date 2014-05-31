@@ -86,6 +86,7 @@ private:
     int pluginPriority;
     int modPriority;
     int sortGroup;
+    bool avoidMove;
     QSet<QString> relevantScripts;
   };
 
