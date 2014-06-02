@@ -476,7 +476,7 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
       return "<code>" + m_ErrorMessage.replace("\n", "<br>") + "</code>";
     case PROBLEM_OVERWRITE:
       return tr("Files in the <font color=\"red\"><i>Overwrite</i></font> mod are are usually files created by an external tool (i.e. Wrye Bash, Automatic Variants, ...).<br>"
-                "It is advisable you empty Overwrite directory by moving those files to an existing mod. You can do this by double-clicking the <font color=\"red\"><i>Overwrite</i></font> mod and use drag&drop to move the files to a mod.<br>"
+                "It is advisable you empty the Overwrite directory by moving those files to an existing mod. You can do this by double-clicking the <font color=\"red\"><i>Overwrite</i></font> mod and use drag&drop to move the files to a mod.<br>"
                 "Alternatively, right-click on <font color=\"red\"><i>Overwrite</i></font> and create a new regular mod from the files there.<br>"
                 "<br>"
                 "Why is this necessary? Generated files may depend on the other mods active in a profile and may thus be incompatible with a different profile (i.e. bashed patches from Wrye Bash). "
