@@ -55,6 +55,11 @@ bool DiagnoseBasic::init(IOrganizer *moInfo)
   m_MOInfo->modList()->onModStateChanged([&] (const QString &modName, IModList::ModStates) {
                                            if (modName == "Overwrite") invalidate();
                                          });
+  m_MOInfo->modList()->onModMoved([&] (const QString&, int, int) {
+                                         // invalidates only the assetOrder check but there is currently no way to recheck individual
+                                         // checks
+                                         invalidate();
+                                      });
   m_MOInfo->pluginList()->onRefreshed([&] () { this->invalidate(); });
 
   return true;
