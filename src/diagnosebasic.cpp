@@ -60,6 +60,9 @@ bool DiagnoseBasic::init(IOrganizer *moInfo)
                                          // checks
                                          invalidate();
                                       });
+  m_MOInfo->pluginList()->onPluginMoved([&] (const QString&, int, int) {
+                                         invalidate();
+                                      });
   m_MOInfo->pluginList()->onRefreshed([&] () { this->invalidate(); });
 
   return true;
