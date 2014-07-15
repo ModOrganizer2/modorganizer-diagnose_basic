@@ -384,13 +384,16 @@ bool DiagnoseBasic::assetOrder() const
   std::sort(distinctModList.begin(), distinctModList.end(),
             [] (const ListElement &lhs, const ListElement &rhs) -> bool { return lhs.pluginPriority < rhs.pluginPriority; });
 
-  topoSort(distinctModList);
+  if (distinctModList.size() > 0) {
+    topoSort(distinctModList);
 
-  // now determine the moves necessary to bring the mod list into this order
-  minSorter(distinctModList);
-  m_SuggestedMoves = minSorter.moves;
-
-  return m_SuggestedMoves.size() > 0;
+    // now determine the moves necessary to bring the mod list into this order
+    minSorter(distinctModList);
+    m_SuggestedMoves = minSorter.moves;
+    return m_SuggestedMoves.size() > 0;
+  } else {
+    return false;
+  }
 }
 
 bool DiagnoseBasic::invalidFontConfig() const
