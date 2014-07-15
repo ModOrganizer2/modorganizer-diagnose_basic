@@ -213,6 +213,9 @@ void DiagnoseBasic::topoSort(std::vector<DiagnoseBasic::ListElement> &list) cons
 
     // figure out disconnected components of the graph
     std::vector<int> component(num_vertices(graph));
+    if (component.size() == 0) {
+      throw MyException(tr("failed to sort"));
+    }
     connected_components(graph, &component[0]);
     for (int i = 0; i != component.size(); ++i) {
       list[i].sortGroup = component[i];
@@ -371,6 +374,10 @@ bool DiagnoseBasic::assetOrder() const
         includedMods.insert(ele.modName);
       }
     }
+  }
+
+  if (distinctModList.size() == 0) {
+    return true;
   }
 
   // sort the list by plugin priority. This step is probably unnecessary as the list was already sorted when we removed duplicates
