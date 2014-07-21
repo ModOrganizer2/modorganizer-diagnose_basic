@@ -513,10 +513,12 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
                        "If someone suggested you ignore this message, please give them a proper slapping from me. <b>Do not ignore this warning</b><br>"
                        "The following changes should prevent these kinds of errors:") + "<ul>";
       foreach(const Move &op, m_SuggestedMoves) {
+        QString itemName = m_MOInfo->modList()->displayName(op.item.modName);
+        QString referenceName = m_MOInfo->modList()->displayName(op.reference.modName);
         if (op.type == Move::BEFORE) {
-          res += "<li>" + tr("Move %1 before %2").arg(op.item.modName).arg(op.reference.modName) + "</li>";
+          res += "<li>" + tr("Move %1 before %2").arg(itemName).arg(referenceName) + "</li>";
         } else {
-          res += "<li>" + tr("Move %1 after %2").arg(op.item.modName).arg(op.reference.modName) + "</li>";
+          res += "<li>" + tr("Move %1 after %2").arg(itemName).arg(referenceName) + "</li>";
         }
       }
       res += "</ul>";
