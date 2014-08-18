@@ -85,7 +85,7 @@ QString DiagnoseBasic::description() const
 
 VersionInfo DiagnoseBasic::version() const
 {
-  return VersionInfo(1, 1, 0, VersionInfo::RELEASE_FINAL);
+  return VersionInfo(1, 1, 1, VersionInfo::RELEASE_FINAL);
 }
 
 bool DiagnoseBasic::isActive() const
@@ -101,7 +101,7 @@ QList<PluginSetting> DiagnoseBasic::settings() const
 
 bool DiagnoseBasic::errorReported() const
 {
-  QDir dir(QCoreApplication::applicationDirPath() + "/logs");
+  QDir dir(qApp->property("dataPath").toString() + "/logs");
   QFileInfoList files = dir.entryInfoList(QStringList("ModOrganizer_??_??_??_??_??.log"),
                                           QDir::Files, QDir::Name | QDir::Reversed);
 
@@ -150,7 +150,7 @@ bool DiagnoseBasic::errorReported() const
 
 bool DiagnoseBasic::overwriteFiles() const
 {
-  QDir dir(QCoreApplication::applicationDirPath() + "/overwrite");
+  QDir dir(qApp->property("dataPath").toString() + "/overwrite");
 
   return dir.count() != 2; // account for . and ..
 }
@@ -245,7 +245,8 @@ void DiagnoseBasic::Sorter::sortGroup(std::vector<ListElement> modList)
 
     auto iter = modList.begin() + 1;
     for (; iter != modList.end(); ++iter) {
-      if (iter->modPriority < curSeqEnd->modPriority) {
+      if ((iter->pluginPriority != curSeqEnd->pluginPriority)
+          && (iter->modPriority < curSeqEnd->modPriority)) {
         // sequence ends
         // use this sequence of correctly sorted mods if it is longer than the previously longest
         // sequence and doesn't have fewer mods that don't want to move. Thus the need for mods to
@@ -287,7 +288,8 @@ void DiagnoseBasic::Sorter::sortGroup(std::vector<ListElement> modList)
         break;
       }
     }
-    if (!found) {
+    if (!found
+        && (iter->pluginPriority != (*sorted.rbegin()).pluginPriority)) {
       // add to end!
       moves.push_back(Move(*iter, *sorted.rbegin(), Move::AFTER));
     }
@@ -342,19 +344,21 @@ bool DiagnoseBasic::assetOrder() const
       [] (const QString &fileName) -> bool { return fileName.endsWith(".esp", Qt::CaseInsensitive)
                                                   || fileName.endsWith(".esm", Qt::CaseInsensitive); });
   foreach (const QString &esp, esps) {
-    ListElement ele;
+    foreach (const QString origin, m_MOInfo->getFileOrigins(esp)) {
+      ListElement ele;
 
-    ele.espName = QFileInfo(esp).fileName();
-    ele.modName = m_MOInfo->pluginList()->origin(ele.espName);
-    ele.pluginPriority = m_MOInfo->pluginList()->priority(ele.espName);
-    ele.modPriority = m_MOInfo->modList()->priority(ele.modName);
-    IModList::ModStates state = m_MOInfo->modList()->state(ele.modName);
-    ele.avoidMove = state.testFlag(IModList::STATE_ESSENTIAL);
-    auto iter = scriptMods.find(ele.modName);
-    if (state.testFlag(IModList::STATE_EXISTS)
-        && (iter != scriptMods.end())) {
-      ele.relevantScripts = iter->second;
-      modList.push_back(ele);
+      ele.espName = QFileInfo(esp).fileName();
+      ele.modName = origin;
+      ele.pluginPriority = m_MOInfo->pluginList()->priority(ele.espName);
+      ele.modPriority = m_MOInfo->modList()->priority(ele.modName);
+      IModList::ModStates state = m_MOInfo->modList()->state(ele.modName);
+      ele.avoidMove = state.testFlag(IModList::STATE_ESSENTIAL);
+      auto iter = scriptMods.find(ele.modName);
+      if (state.testFlag(IModList::STATE_EXISTS)
+          && (iter != scriptMods.end())) {
+        ele.relevantScripts = iter->second;
+        modList.push_back(ele);
+      }
     }
   }
 
