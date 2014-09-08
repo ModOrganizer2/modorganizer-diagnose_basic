@@ -70,7 +70,7 @@ bool DiagnoseBasic::init(IOrganizer *moInfo)
 
 QString DiagnoseBasic::name() const
 {
-  return tr("Basic diagnosis plugin");
+  return "Basic diagnosis plugin";
 }
 
 QString DiagnoseBasic::author() const
@@ -95,7 +95,12 @@ bool DiagnoseBasic::isActive() const
 
 QList<PluginSetting> DiagnoseBasic::settings() const
 {
-  return QList<PluginSetting>();
+  return QList<PluginSetting>()
+      << PluginSetting("check_errorlog", tr("Warn when an error occured last time an application was run"), true)
+      << PluginSetting("check_overwrite", tr("Warn when there are files in the overwrite directory"), true)
+      << PluginSetting("check_font", tr("Warn when the font configuration refers to files that aren't installed"), true)
+      << PluginSetting("check_conflict", tr("Warn when mods are installed that conflict with MO functionality"), true)
+      << PluginSetting("check_modorder", tr("Warn when MO determins the mod order may cause problems"), true);
 }
 
 
@@ -444,24 +449,23 @@ bool DiagnoseBasic::invalidFontConfig() const
   return false;
 }
 
-
 std::vector<unsigned int> DiagnoseBasic::activeProblems() const
 {
   std::vector<unsigned int> result;
 
-  if (errorReported()) {
+  if (m_MOInfo->pluginSetting(name(), "check_errorlog").toBool() && errorReported()) {
     result.push_back(PROBLEM_ERRORLOG);
   }
-  if (overwriteFiles()) {
+  if (m_MOInfo->pluginSetting(name(), "check_overwrite").toBool() && overwriteFiles()) {
     result.push_back(PROBLEM_OVERWRITE);
   }
-  if (invalidFontConfig()) {
+  if (m_MOInfo->pluginSetting(name(), "check_font").toBool() && invalidFontConfig()) {
     result.push_back(PROBLEM_INVALIDFONT);
   }
-  if (nitpickInstalled()) {
+  if (m_MOInfo->pluginSetting(name(), "check_conflict").toBool() && nitpickInstalled()) {
     result.push_back(PROBLEM_NITPICKINSTALLED);
   }
-  if (assetOrder()) {
+  if (m_MOInfo->pluginSetting(name(), "check_modorder").toBool() && assetOrder()) {
     result.push_back(PROBLEM_ASSETORDER);
   }
   if (QFile::exists(m_MOInfo->profilePath() + "/profile_tweaks.ini")) {
@@ -469,26 +473,6 @@ std::vector<unsigned int> DiagnoseBasic::activeProblems() const
   }
 
   return result;
-}
-
-QString DiagnoseBasic::shortDescription(unsigned int key) const
-{
-  switch (key) {
-    case PROBLEM_ERRORLOG:
-      return tr("There was an error reported recently");
-    case PROBLEM_OVERWRITE:
-      return tr("There are files in your overwrite mod");
-    case PROBLEM_INVALIDFONT:
-      return tr("Your font configuration may be broken");
-    case PROBLEM_NITPICKINSTALLED:
-      return tr("Nitpick installed");
-    case PROBLEM_ASSETORDER:
-      return tr("Potential Mod order problem");
-    case PROBLEM_PROFILETWEAKS:
-      return tr("Ini Tweaks overwritten");
-    default:
-      throw MyException(tr("invalid problem key %1").arg(key));
-  }
 }
 
 QString DiagnoseBasic::fullDescription(unsigned int key) const
