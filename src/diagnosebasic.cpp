@@ -85,7 +85,7 @@ QString DiagnoseBasic::description() const
 
 VersionInfo DiagnoseBasic::version() const
 {
-  return VersionInfo(1, 1, 1, VersionInfo::RELEASE_FINAL);
+  return VersionInfo(1, 1, 2, VersionInfo::RELEASE_FINAL);
 }
 
 bool DiagnoseBasic::isActive() const
@@ -100,7 +100,8 @@ QList<PluginSetting> DiagnoseBasic::settings() const
       << PluginSetting("check_overwrite", tr("Warn when there are files in the overwrite directory"), true)
       << PluginSetting("check_font", tr("Warn when the font configuration refers to files that aren't installed"), true)
       << PluginSetting("check_conflict", tr("Warn when mods are installed that conflict with MO functionality"), true)
-      << PluginSetting("check_modorder", tr("Warn when MO determins the mod order may cause problems"), true);
+      << PluginSetting("check_modorder", tr("Warn when MO determins the mod order may cause problems"), true)
+      << PluginSetting("check_missingmasters", tr("Warn when there are esps with missing masters"), true);
 }
 
 
@@ -405,6 +406,36 @@ bool DiagnoseBasic::assetOrder() const
   }
 }
 
+bool DiagnoseBasic::missingMasters() const
+{
+  std::set<QString> enabledPlugins;
+
+  QStringList esps = m_MOInfo->findFiles("",
+      [] (const QString &fileName) -> bool { return fileName.endsWith(".esp", Qt::CaseInsensitive)
+                                                  || fileName.endsWith(".esm", Qt::CaseInsensitive); });
+  // gather enabled masters first
+  foreach (const QString &esp, esps) {
+    QString baseName = QFileInfo(esp).fileName();
+    if (m_MOInfo->pluginList()->state(baseName) == IPluginList::STATE_ACTIVE) {
+      enabledPlugins.insert(baseName);
+    }
+  }
+
+  m_MissingMasters.clear();
+  // for each required master in each esp, test if it's in the list of enabled masters.
+  foreach (const QString &esp, esps) {
+    QString baseName = QFileInfo(esp).fileName();
+    if (m_MOInfo->pluginList()->state(baseName) == IPluginList::STATE_ACTIVE) {
+      foreach (const QString master, m_MOInfo->pluginList()->masters(baseName)) {
+        if (enabledPlugins.find(master) == enabledPlugins.end()) {
+          m_MissingMasters.insert(master);
+        }
+      }
+    }
+  }
+  return m_MissingMasters.size() > 0;
+}
+
 bool DiagnoseBasic::invalidFontConfig() const
 {
   if (m_MOInfo->gameInfo().type() != IGameInfo::TYPE_SKYRIM) {
@@ -468,11 +499,36 @@ std::vector<unsigned int> DiagnoseBasic::activeProblems() const
   if (m_MOInfo->pluginSetting(name(), "check_modorder").toBool() && assetOrder()) {
     result.push_back(PROBLEM_ASSETORDER);
   }
+  if (m_MOInfo->pluginSetting(name(), "check_missingmasters").toBool() && missingMasters()) {
+    result.push_back(PROBLEM_MISSINGMASTERS);
+  }
   if (QFile::exists(m_MOInfo->profilePath() + "/profile_tweaks.ini")) {
     result.push_back(PROBLEM_PROFILETWEAKS);
   }
 
   return result;
+}
+
+QString DiagnoseBasic::shortDescription(unsigned int key) const
+{
+  switch (key) {
+    case PROBLEM_ERRORLOG:
+      return tr("There was an error reported recently");
+    case PROBLEM_OVERWRITE:
+      return tr("There are files in your overwrite mod");
+    case PROBLEM_INVALIDFONT:
+      return tr("Your font configuration may be broken");
+    case PROBLEM_NITPICKINSTALLED:
+      return tr("Nitpick installed");
+    case PROBLEM_ASSETORDER:
+      return tr("Potential Mod order problem");
+    case PROBLEM_PROFILETWEAKS:
+      return tr("Ini Tweaks overwritten");
+    case PROBLEM_MISSINGMASTERS:
+      return tr("Missing Masters");
+    default:
+      throw MyException(tr("invalid problem key %1").arg(key));
+  }
 }
 
 QString DiagnoseBasic::fullDescription(unsigned int key) const
@@ -521,6 +577,11 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
                 "Advice: Copy settings you want to keep to an appropriate ini tweak, then delete <i>profile_tweaks.ini</i>.<br>"
                 "Hitting the <i>Fix</i> button will delete that file")
              + "<hr><i>profile_tweaks.ini:</i><pre>" + fileContent + "</pre>";
+    } break;
+    case PROBLEM_MISSINGMASTERS: {
+      return tr("The masters for some plugins (esp/esm) are not enabled.<br>"
+                "The game will crash unless you install and enable the following plugins: ")
+             + "<ul><li>" + SetJoin(m_MissingMasters, "</li><li>") + "</li></ul>";
     } break;
     default:
       throw MyException(tr("invalid problem key %1").arg(key));
