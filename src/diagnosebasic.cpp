@@ -417,7 +417,7 @@ bool DiagnoseBasic::missingMasters() const
   foreach (const QString &esp, esps) {
     QString baseName = QFileInfo(esp).fileName();
     if (m_MOInfo->pluginList()->state(baseName) == IPluginList::STATE_ACTIVE) {
-      enabledPlugins.insert(baseName);
+      enabledPlugins.insert(baseName.toLower());
     }
   }
 
@@ -427,7 +427,7 @@ bool DiagnoseBasic::missingMasters() const
     QString baseName = QFileInfo(esp).fileName();
     if (m_MOInfo->pluginList()->state(baseName) == IPluginList::STATE_ACTIVE) {
       foreach (const QString master, m_MOInfo->pluginList()->masters(baseName)) {
-        if (enabledPlugins.find(master) == enabledPlugins.end()) {
+        if (enabledPlugins.find(master.toLower()) == enabledPlugins.end()) {
           m_MissingMasters.insert(master);
         }
       }
