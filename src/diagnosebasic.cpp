@@ -45,6 +45,7 @@ using namespace MOBase;
 
 
 DiagnoseBasic::DiagnoseBasic()
+  : m_MOInfo(NULL)
 {
 }
 
@@ -433,7 +434,7 @@ bool DiagnoseBasic::missingMasters() const
       }
     }
   }
-  return m_MissingMasters.size() > 0;
+  return !m_MissingMasters.empty();
 }
 
 bool DiagnoseBasic::invalidFontConfig() const
