@@ -553,7 +553,7 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
                 "Worse: The two solutions may conflict so it's strongly suggested you remove this plugin.");
     case PROBLEM_ASSETORDER: {
       QString res = tr("The conflict resolution order for some mods containing scripts differs from that of the corresponding esp.<br>"
-                       "This may lead to subtle, hard to locate bugs. You should re-order the affected mods (left list!).<br>"
+                       "This may lead to subtle, hard to locate bugs. <b>You should re-order the affected mods (<font color=\"red\">left list!</font>).</b><br>"
                        "There is no way to reliably know if each of these changes is absolutely necessary but its definitively safer.<br>"
                        "If someone suggested you ignore this message, please give them a proper slapping from me. <b>Do not ignore this warning</b><br>"
                        "The following changes should prevent these kinds of errors:") + "<ul>";
