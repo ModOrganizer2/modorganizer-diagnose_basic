@@ -108,7 +108,7 @@ QList<PluginSetting> DiagnoseBasic::settings() const
 
 bool DiagnoseBasic::errorReported() const
 {
-  QDir dir(qApp->property("dataPath").toString() + "/logs");
+  QDir dir(QCoreApplication::applicationDirPath() + "/logs");
   QFileInfoList files = dir.entryInfoList(QStringList("ModOrganizer_??_??_??_??_??.log"),
                                           QDir::Files, QDir::Name | QDir::Reversed);
 
@@ -157,7 +157,7 @@ bool DiagnoseBasic::errorReported() const
 
 bool DiagnoseBasic::overwriteFiles() const
 {
-  QDir dir(qApp->property("dataPath").toString() + "/overwrite");
+  QDir dir(QCoreApplication::applicationDirPath() + "/overwrite");
 
   return dir.count() != 2; // account for . and ..
 }
