@@ -45,7 +45,7 @@ using namespace MOBase;
 
 
 DiagnoseBasic::DiagnoseBasic()
-  : m_MOInfo(NULL)
+  : m_MOInfo(nullptr)
 {
 }
 
@@ -598,7 +598,7 @@ void DiagnoseBasic::startGuidedFix(unsigned int key) const
 {
   switch (key) {
     case PROBLEM_ASSETORDER: {
-      if (QMessageBox::warning(NULL, tr("Continue?"), tr("This <b>BETA</b> feature will rearrange your mods to eliminate all "
+      if (QMessageBox::warning(nullptr, tr("Continue?"), tr("This <b>BETA</b> feature will rearrange your mods to eliminate all "
               "possible ordering conflicts. Proceed?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
         foreach (const Move &op, m_SuggestedMoves) {
           int oldPriority = m_MOInfo->modList()->priority(op.item.modName);
