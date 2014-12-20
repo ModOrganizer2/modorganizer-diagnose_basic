@@ -388,7 +388,7 @@ bool DiagnoseBasic::assetOrder() const
   }
 
   if (distinctModList.size() == 0) {
-    return true;
+    return false;
   }
 
   // sort the list by plugin priority. This step is probably unnecessary as the list was already sorted when we removed duplicates
