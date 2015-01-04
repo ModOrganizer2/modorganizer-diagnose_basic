@@ -335,8 +335,11 @@ bool DiagnoseBasic::assetOrder() const
 
   // list of mods containing conflicted scripts. We care only for those
   std::map<QString, QSet<QString>> scriptMods;
-  foreach (const IOrganizer::FileInfo & pex, m_MOInfo->findFileInfos("scripts",
-        [] (const IOrganizer::FileInfo &file) -> bool { return file.filePath.endsWith(".pex", Qt::CaseInsensitive); })) {
+  auto filter = [] (const IOrganizer::FileInfo &file) -> bool {
+                                   return file.filePath.endsWith(".pex", Qt::CaseInsensitive); };
+  foreach (const IOrganizer::FileInfo & pex,
+           m_MOInfo->findFileInfos("scripts", filter)
+           ) {
     QStringList origins = pex.origins;
     origins.removeAll("data"); // ignore files in base directory
     if (origins.size() > 1) {
