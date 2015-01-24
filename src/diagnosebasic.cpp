@@ -20,6 +20,9 @@
 #include "diagnosebasic.h"
 #include <report.h>
 #include <utility.h>
+#include <imodlist.h>
+#include <ipluginlist.h>
+#include <igameinfo.h>
 #include <QtPlugin>
 #include <QFile>
 #include <QDir>

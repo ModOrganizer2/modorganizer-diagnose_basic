@@ -29,7 +29,7 @@ along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
 #include <QSet>
 
 
-class DiagnoseBasic : public QObject, MOBase::IPlugin, MOBase::IPluginDiagnose
+class DiagnoseBasic : public QObject, public MOBase::IPlugin, public MOBase::IPluginDiagnose
 {
   Q_OBJECT
   Q_INTERFACES(MOBase::IPlugin MOBase::IPluginDiagnose)
