@@ -31,4 +31,5 @@ INCLUDEPATH += "$${BOOSTPATH}"
 #DEFINES += INIEDITOR_LIBRARY
 
 OTHER_FILES += \
-    diagnosebasic.json
+    diagnosebasic.json\
+    SConscript
