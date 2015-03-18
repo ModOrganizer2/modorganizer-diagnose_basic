@@ -2,17 +2,6 @@ Import('qt_env')
 
 env = qt_env.Clone()
 
-modules = [
-    'Core',
-    'Gui'
-]
-
-if env['QT_MAJOR_VERSION'] > 4:
-    modules += [ 'Widgets' ]
-
-env.EnableQt4Modules(['Qt' + n for n in modules],
-                     debug = env['CONFIG'] == 'debug')
-
 env.AppendUnique(CPPDEFINES = [
     'DIAGNOSEBASIC_LIBRARY',
     'NOMINMAX',
@@ -20,11 +9,9 @@ env.AppendUnique(CPPDEFINES = [
     '_SCL_SECURE_NO_WARNINGS'
 ])
 
-env.RequireLibraries('uibase')
-
 env.AppendUnique(CPPPATH = [
     '${BOOSTPATH}'
 ])
 
 lib = env.SharedLibrary('diagnoseBasic', env.Glob('*.cpp'))
-env.InstallPlugin(lib)
+env.InstallModule(lib)
