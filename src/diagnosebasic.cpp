@@ -48,7 +48,7 @@ using namespace MOBase;
 
 
 DiagnoseBasic::DiagnoseBasic()
-  : m_MOInfo(NULL)
+  : m_MOInfo(nullptr)
 {
 }
 
@@ -111,7 +111,7 @@ QList<PluginSetting> DiagnoseBasic::settings() const
 
 bool DiagnoseBasic::errorReported() const
 {
-  QDir dir(QCoreApplication::applicationDirPath() + "/logs");
+  QDir dir(qApp->property("dataPath").toString() + "/logs");
   QFileInfoList files = dir.entryInfoList(QStringList("ModOrganizer_??_??_??_??_??.log"),
                                           QDir::Files, QDir::Name | QDir::Reversed);
 
@@ -160,7 +160,7 @@ bool DiagnoseBasic::errorReported() const
 
 bool DiagnoseBasic::overwriteFiles() const
 {
-  QDir dir(QCoreApplication::applicationDirPath() + "/overwrite");
+  QDir dir(qApp->property("dataPath").toString() + "/overwrite");
 
   return dir.count() != 2; // account for . and ..
 }
@@ -338,8 +338,11 @@ bool DiagnoseBasic::assetOrder() const
 
   // list of mods containing conflicted scripts. We care only for those
   std::map<QString, QSet<QString>> scriptMods;
-  foreach (const IOrganizer::FileInfo & pex, m_MOInfo->findFileInfos("scripts",
-        [] (const IOrganizer::FileInfo &file) -> bool { return file.filePath.endsWith(".pex", Qt::CaseInsensitive); })) {
+  auto filter = [] (const IOrganizer::FileInfo &file) -> bool {
+                                   return file.filePath.endsWith(".pex", Qt::CaseInsensitive); };
+  foreach (const IOrganizer::FileInfo & pex,
+           m_MOInfo->findFileInfos("scripts", filter)
+           ) {
     QStringList origins = pex.origins;
     origins.removeAll("data"); // ignore files in base directory
     if (origins.size() > 1) {
@@ -398,13 +401,16 @@ bool DiagnoseBasic::assetOrder() const
   std::sort(distinctModList.begin(), distinctModList.end(),
             [] (const ListElement &lhs, const ListElement &rhs) -> bool { return lhs.pluginPriority < rhs.pluginPriority; });
 
-  topoSort(distinctModList);
+  if (distinctModList.size() > 0) {
+    topoSort(distinctModList);
 
-  // now determine the moves necessary to bring the mod list into this order
-  minSorter(distinctModList);
-  m_SuggestedMoves = minSorter.moves;
-
-  return m_SuggestedMoves.size() > 0;
+    // now determine the moves necessary to bring the mod list into this order
+    minSorter(distinctModList);
+    m_SuggestedMoves = minSorter.moves;
+    return m_SuggestedMoves.size() > 0;
+  } else {
+    return false;
+  }
 }
 
 bool DiagnoseBasic::missingMasters() const
@@ -598,7 +604,7 @@ void DiagnoseBasic::startGuidedFix(unsigned int key) const
 {
   switch (key) {
     case PROBLEM_ASSETORDER: {
-      if (QMessageBox::warning(NULL, tr("Continue?"), tr("This <b>BETA</b> feature will rearrange your mods to eliminate all "
+      if (QMessageBox::warning(nullptr, tr("Continue?"), tr("This <b>BETA</b> feature will rearrange your mods to eliminate all "
               "possible ordering conflicts. Proceed?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
         foreach (const Move &op, m_SuggestedMoves) {
           int oldPriority = m_MOInfo->modList()->priority(op.item.modName);
