@@ -48,7 +48,7 @@ using namespace MOBase;
 
 
 DiagnoseBasic::DiagnoseBasic()
-  : m_MOInfo(NULL)
+  : m_MOInfo(nullptr)
 {
 }
 
@@ -111,7 +111,7 @@ QList<PluginSetting> DiagnoseBasic::settings() const
 
 bool DiagnoseBasic::errorReported() const
 {
-  QDir dir(QCoreApplication::applicationDirPath() + "/logs");
+  QDir dir(qApp->property("dataPath").toString() + "/logs");
   QFileInfoList files = dir.entryInfoList(QStringList("ModOrganizer_??_??_??_??_??.log"),
                                           QDir::Files, QDir::Name | QDir::Reversed);
 
@@ -160,7 +160,7 @@ bool DiagnoseBasic::errorReported() const
 
 bool DiagnoseBasic::overwriteFiles() const
 {
-  QDir dir(QCoreApplication::applicationDirPath() + "/overwrite");
+  QDir dir(qApp->property("dataPath").toString() + "/overwrite");
 
   return dir.count() != 2; // account for . and ..
 }
@@ -338,12 +338,16 @@ bool DiagnoseBasic::assetOrder() const
 
   // list of mods containing conflicted scripts. We care only for those
   std::map<QString, QSet<QString>> scriptMods;
-  foreach (const IOrganizer::FileInfo & pex, m_MOInfo->findFileInfos("scripts",
-        [] (const IOrganizer::FileInfo &file) -> bool { return file.filePath.endsWith(".pex", Qt::CaseInsensitive); })) {
+  auto filter = [] (const IOrganizer::FileInfo &file) -> bool {
+    return file.filePath.endsWith(".pex", Qt::CaseInsensitive); };
+
+  for (const IOrganizer::FileInfo &pex : m_MOInfo->findFileInfos("scripts", filter)) {
     QStringList origins = pex.origins;
-    origins.removeAll("data"); // ignore files in base directory
+    // ignore files in base directories
+    origins.removeAll("data");
+    origins.removeAll("Overwrite");
     if (origins.size() > 1) {
-      foreach(const QString &origin, origins) {
+      for(const QString &origin : origins) {
         scriptMods[origin].insert(pex.filePath);
       }
     }
@@ -351,10 +355,12 @@ bool DiagnoseBasic::assetOrder() const
 
   // produce a list with the information we need: plugin, mod and the priority for each
   QStringList esps = m_MOInfo->findFiles("",
-      [] (const QString &fileName) -> bool { return fileName.endsWith(".esp", Qt::CaseInsensitive)
-                                                  || fileName.endsWith(".esm", Qt::CaseInsensitive); });
-  foreach (const QString &esp, esps) {
-    foreach (const QString origin, m_MOInfo->getFileOrigins(esp)) {
+                                         [] (const QString &fileName) -> bool {
+    return fileName.endsWith(".esp", Qt::CaseInsensitive)
+        || fileName.endsWith(".esm", Qt::CaseInsensitive);
+  });
+  for (const QString &esp : esps) {
+    for (const QString origin : m_MOInfo->getFileOrigins(esp)) {
       ListElement ele;
 
       ele.espName = QFileInfo(esp).fileName();
@@ -371,7 +377,6 @@ bool DiagnoseBasic::assetOrder() const
       }
     }
   }
-
   // generate a copy of list that contains each mod only once, otherwise
   // strange things happen if a mod contains multiple esps that are mixed
   // with esps from other mods
@@ -379,17 +384,18 @@ bool DiagnoseBasic::assetOrder() const
   {
     // sort the input list so we get predictable results
     std::sort(modList.begin(), modList.end(),
-              [] (const ListElement &lhs, const ListElement &rhs) -> bool { return lhs.pluginPriority < rhs.pluginPriority; });
+              [] (const ListElement &lhs, const ListElement &rhs) -> bool {
+      return lhs.pluginPriority < rhs.pluginPriority;
+    });
 
     std::set<QString> includedMods;
-    foreach(const ListElement &ele, modList) {
+    for(const ListElement &ele : modList) {
       if (includedMods.find(ele.modName) == includedMods.end()) {
         distinctModList.push_back(ele);
         includedMods.insert(ele.modName);
       }
     }
   }
-
   if (distinctModList.size() == 0) {
     return false;
   }
@@ -398,13 +404,16 @@ bool DiagnoseBasic::assetOrder() const
   std::sort(distinctModList.begin(), distinctModList.end(),
             [] (const ListElement &lhs, const ListElement &rhs) -> bool { return lhs.pluginPriority < rhs.pluginPriority; });
 
-  topoSort(distinctModList);
+  if (distinctModList.size() > 0) {
+    topoSort(distinctModList);
 
-  // now determine the moves necessary to bring the mod list into this order
-  minSorter(distinctModList);
-  m_SuggestedMoves = minSorter.moves;
-
-  return m_SuggestedMoves.size() > 0;
+    // now determine the moves necessary to bring the mod list into this order
+    minSorter(distinctModList);
+    m_SuggestedMoves = minSorter.moves;
+    return m_SuggestedMoves.size() > 0;
+  } else {
+    return false;
+  }
 }
 
 bool DiagnoseBasic::missingMasters() const
@@ -598,7 +607,7 @@ void DiagnoseBasic::startGuidedFix(unsigned int key) const
 {
   switch (key) {
     case PROBLEM_ASSETORDER: {
-      if (QMessageBox::warning(NULL, tr("Continue?"), tr("This <b>BETA</b> feature will rearrange your mods to eliminate all "
+      if (QMessageBox::warning(nullptr, tr("Continue?"), tr("This <b>BETA</b> feature will rearrange your mods to eliminate all "
               "possible ordering conflicts. Proceed?"), QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
         foreach (const Move &op, m_SuggestedMoves) {
           int oldPriority = m_MOInfo->modList()->priority(op.item.modName);
