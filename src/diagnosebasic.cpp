@@ -68,7 +68,7 @@ bool DiagnoseBasic::init(IOrganizer *moInfo)
                                          invalidate();
                                       });
   m_MOInfo->pluginList()->onRefreshed([&] () { invalidate(); });
-  m_MOInfo->pluginList()->onPluginStateChanged([&] (const QString &name, IPluginList::PluginStates state) {
+  m_MOInfo->pluginList()->onPluginStateChanged([&] (const QString &, IPluginList::PluginStates) {
     invalidate();
   });
 
@@ -392,7 +392,7 @@ bool DiagnoseBasic::assetOrder() const
     });
 
     std::set<QString> includedMods;
-    for(const ListElement &ele : modList) {
+    for (const ListElement &ele : modList) {
       if (includedMods.find(ele.modName) == includedMods.end()) {
         distinctModList.push_back(ele);
         includedMods.insert(ele.modName);
