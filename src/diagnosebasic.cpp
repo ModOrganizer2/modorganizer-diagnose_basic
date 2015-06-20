@@ -18,6 +18,8 @@
  */
 
 #include "diagnosebasic.h"
+
+#include "filenamestring.h"
 #include <report.h>
 #include <utility.h>
 #include <imodlist.h>
@@ -26,6 +28,7 @@
 #include <QtPlugin>
 #include <QFile>
 #include <QDir>
+#include <QDirIterator>
 #include <QDebug>
 #include <QCoreApplication>
 #include <QMessageBox>
@@ -160,11 +163,45 @@ bool DiagnoseBasic::errorReported() const
   return false;
 }
 
+namespace {
+
+bool checkEmpty(QString const &path)
+{
+  QDir dir(path);
+  dir.setFilter(QDir::Files | QDir::Hidden | QDir::System);
+
+  //Search files firt
+  for (QString const &f : dir.entryList()) {
+    FileNameString file(f);
+    if (/*ignoring log files && */! file.endsWith(".log")) {
+      return false;
+    }
+  }
+
+  //Then directories
+  dir.setFilter(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::NoSymLinks);
+  for (QString const &d : dir.entryList()) {
+    QString newPath = QString("%1/%2").arg(dir.absolutePath()).arg(d);
+    if (!checkEmpty(newPath)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+}
 
 bool DiagnoseBasic::overwriteFiles() const
 {
-  QDir dir(qApp->property("dataPath").toString() + "/overwrite");
+  QString dirname(qApp->property("dataPath").toString() + "/overwrite");
 
+  if (true) { //ignoring .log files or empty directories
+    //recurse through directories, return true if we find a file that doesn't
+    //end in .log
+    return !checkEmpty(dirname);
+  }
+  QDir dir(dirname);
   return dir.count() != 2; // account for . and ..
 }
 
