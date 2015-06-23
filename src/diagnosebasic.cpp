@@ -195,7 +195,6 @@ bool checkEmpty(QString const &path)
 bool DiagnoseBasic::overwriteFiles() const
 {
   QString dirname(qApp->property("dataPath").toString() + "/overwrite");
-
   if (true) { //ignoring .log files or empty directories
     //recurse through directories, return true if we find a file that doesn't
     //end in .log
