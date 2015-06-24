@@ -124,6 +124,7 @@ private:
 private:
 
   void topoSort(std::vector<ListElement> &list) const;
+  bool checkEmpty(const QString &path) const;
 
 private:
 

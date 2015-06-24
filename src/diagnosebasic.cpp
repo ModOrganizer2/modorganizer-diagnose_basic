@@ -111,7 +111,10 @@ QList<PluginSetting> DiagnoseBasic::settings() const
       << PluginSetting("check_font", tr("Warn when the font configuration refers to files that aren't installed"), true)
       << PluginSetting("check_conflict", tr("Warn when mods are installed that conflict with MO functionality"), true)
       << PluginSetting("check_modorder", tr("Warn when MO determins the mod order may cause problems"), true)
-      << PluginSetting("check_missingmasters", tr("Warn when there are esps with missing masters"), true);
+      << PluginSetting("check_missingmasters", tr("Warn when there are esps with missing masters"), true)
+      << PluginSetting("ow_ignore_empty", tr("Ignore empty directories when checking overwrite directory"), false)
+      << PluginSetting("ow_ignore_log", tr("Ignore .log files and empty directories when checking overwrite directory"), false)
+     ;
 }
 
 
@@ -163,9 +166,7 @@ bool DiagnoseBasic::errorReported() const
   return false;
 }
 
-namespace {
-
-bool checkEmpty(QString const &path)
+bool DiagnoseBasic::checkEmpty(QString const &path) const
 {
   QDir dir(path);
   dir.setFilter(QDir::Files | QDir::Hidden | QDir::System);
@@ -173,7 +174,8 @@ bool checkEmpty(QString const &path)
   //Search files firt
   for (QString const &f : dir.entryList()) {
     FileNameString file(f);
-    if (/*ignoring log files && */! file.endsWith(".log")) {
+    if (! m_MOInfo->pluginSetting(name(), "ow_ignore_log").toBool() ||
+        ! file.endsWith(".log")) {
       return false;
     }
   }
@@ -190,14 +192,11 @@ bool checkEmpty(QString const &path)
   return true;
 }
 
-}
-
 bool DiagnoseBasic::overwriteFiles() const
 {
   QString dirname(qApp->property("dataPath").toString() + "/overwrite");
-  if (true) { //ignoring .log files or empty directories
-    //recurse through directories, return true if we find a file that doesn't
-    //end in .log
+  if (m_MOInfo->pluginSetting(name(), "ow_ignore_empty").toBool() ||
+      m_MOInfo->pluginSetting(name(), "ow_ignore_log").toBool()) {
     return !checkEmpty(dirname);
   }
   QDir dir(dirname);
