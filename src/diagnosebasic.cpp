@@ -171,7 +171,7 @@ bool DiagnoseBasic::checkEmpty(QString const &path) const
   QDir dir(path);
   dir.setFilter(QDir::Files | QDir::Hidden | QDir::System);
 
-  //Search files firt
+  //Search files first
   for (QString const &f : dir.entryList()) {
     FileNameString file(f);
     if (! m_MOInfo->pluginSetting(name(), "ow_ignore_log").toBool() ||
@@ -182,9 +182,8 @@ bool DiagnoseBasic::checkEmpty(QString const &path) const
 
   //Then directories
   dir.setFilter(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::NoSymLinks);
-  for (QString const &d : dir.entryList()) {
-    QString newPath = QString("%1/%2").arg(dir.absolutePath()).arg(d);
-    if (!checkEmpty(newPath)) {
+  for (QFileInfo const &subdir : dir.entryInfoList()) {
+    if (!checkEmpty(subdir.absoluteFilePath())) {
       return false;
     }
   }
