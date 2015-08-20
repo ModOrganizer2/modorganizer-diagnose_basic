@@ -9,6 +9,10 @@ env.AppendUnique(CPPDEFINES = [
     '_SCL_SECURE_NO_WARNINGS'
 ])
 
+# Boost produces very long names with msvc truncates. Doesn't seem to cause
+# problems.
+env.AppendUnique(CPPFLAGS = [ '-wd4503' ])
+
 env.AppendUnique(CPPPATH = [
     '${BOOSTPATH}'
 ])
