@@ -598,12 +598,11 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
       return tr("You have the nitpick skse plugin installed. This plugin is not needed with Mod Organizer because MO already offers the same functionality. "
                 "Worse: The two solutions may conflict so it's strongly suggested you remove this plugin.");
     case PROBLEM_ASSETORDER: {
-      QString res = tr("The conflict resolution order for some mods containing scripts differs from that of the corresponding esp.<br>"
-                       "This may lead to subtle, hard to locate bugs. <b>You should re-order the affected mods (<font color=\"red\">left list!</font>).</b><br>"
-                       "There is no way to reliably know if each of these changes is absolutely necessary but its definitively safer.<br>"
-                       "If someone suggested you ignore this message, please give them a proper slapping from me. <b>Do not ignore this warning</b><br>"
-                       "The following changes should prevent these kinds of errors:") + "<ul>";
-      foreach(const Move &op, m_SuggestedMoves) {
+      QString res = tr("The conflict resolution order for some mods with scripts differs from that of the corresponding esp.<br>"
+                       "This may lead to subtle, hard to locate bugs.<br>"
+                       "<b>Please first ensure your load order is correct!</b><br>"
+                       "If it is you should re-order the affected mods (<b><font color=\"red\">left list!</font></b>) like this:") + "<br><ul>";
+      for (const Move &op : m_SuggestedMoves) {
         QString itemName = m_MOInfo->modList()->displayName(op.item.modName);
         QString referenceName = m_MOInfo->modList()->displayName(op.reference.modName);
         if (op.type == Move::BEFORE) {
