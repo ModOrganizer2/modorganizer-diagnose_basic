@@ -20,11 +20,12 @@
 #include "diagnosebasic.h"
 
 #include "filenamestring.h"
+#include "iplugingame.h"
 #include <report.h>
 #include <utility.h>
 #include <imodlist.h>
 #include <ipluginlist.h>
-#include <igameinfo.h>
+
 #include <QtPlugin>
 #include <QFile>
 #include <QDir>
@@ -33,6 +34,7 @@
 #include <QCoreApplication>
 #include <QMessageBox>
 #include <QDateTime>
+
 #include <regex>
 #include <functional>
 #include <vector>
@@ -485,7 +487,7 @@ bool DiagnoseBasic::missingMasters() const
 
 bool DiagnoseBasic::invalidFontConfig() const
 {
-  if (m_MOInfo->gameInfo().type() != IGameInfo::TYPE_SKYRIM) {
+  if (m_MOInfo->managedGame()->gameName() != "Skyrim") {
     // this check is only for skyrim
     return false;
   }
