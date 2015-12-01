@@ -74,7 +74,6 @@ private:
   static const unsigned int PROBLEM_OVERWRITE = 2;
   static const unsigned int PROBLEM_INVALIDFONT = 3;
   static const unsigned int PROBLEM_NITPICKINSTALLED = 4;
-  static const unsigned int PROBLEM_ASSETORDER = 5;
   static const unsigned int PROBLEM_PROFILETWEAKS = 7;
   static const unsigned int PROBLEM_MISSINGMASTERS = 8;
 
@@ -130,7 +129,6 @@ private:
 
   MOBase::IOrganizer *m_MOInfo;
   mutable QString m_ErrorMessage;
-  mutable std::vector <Move> m_SuggestedMoves;
   mutable QString m_NewestModlistBackup;
   mutable std::set<QString> m_MissingMasters;
 
