@@ -263,7 +263,7 @@ bool DiagnoseBasic::missingMasters() const
 
 bool DiagnoseBasic::invalidFontConfig() const
 {
-  if ((m_MOInfo->managedGame()->gameName() != "Skyrim") || (m_MOInfo->managedGame()->gameName() != "SkyrimSE"))  {
+  if ((m_MOInfo->managedGame()->gameName() != "Skyrim") && (m_MOInfo->managedGame()->gameName() != "SkyrimSE"))  {
     // this check is only for skyrim
     return false;
   }
