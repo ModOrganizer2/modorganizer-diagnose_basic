@@ -121,7 +121,8 @@ QList<PluginSetting> DiagnoseBasic::settings() const
 
 bool DiagnoseBasic::errorReported() const
 {
-  QDir dir(qApp->property("dataPath").toString() + "/logs");
+  //QDir dir(qApp->property("dataPath").toString() + "/logs");
+  QDir dir(m_MOInfo->basePath()+"/logs");
   QFileInfoList files = dir.entryInfoList(QStringList("ModOrganizer_??_??_??_??_??.log"),
                                           QDir::Files, QDir::Name | QDir::Reversed);
 
@@ -194,7 +195,8 @@ bool DiagnoseBasic::checkEmpty(QString const &path) const
 
 bool DiagnoseBasic::overwriteFiles() const
 {
-  QString dirname(qApp->property("dataPath").toString() + "/overwrite");
+  //QString dirname(qApp->property("dataPath").toString() + "/overwrite");
+  QString dirname(m_MOInfo->overwritePath());
   if (m_MOInfo->pluginSetting(name(), "ow_ignore_empty").toBool() ||
       m_MOInfo->pluginSetting(name(), "ow_ignore_log").toBool()) {
     return !checkEmpty(dirname);
