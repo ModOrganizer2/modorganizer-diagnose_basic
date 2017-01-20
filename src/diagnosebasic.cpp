@@ -121,8 +121,7 @@ QList<PluginSetting> DiagnoseBasic::settings() const
 
 bool DiagnoseBasic::errorReported() const
 {
-  //QDir dir(qApp->property("dataPath").toString() + "/logs");
-  QDir dir(m_MOInfo->basePath()+"/logs");
+  QDir dir(qApp->property("dataPath").toString() + "/logs");
   QFileInfoList files = dir.entryInfoList(QStringList("ModOrganizer_??_??_??_??_??.log"),
                                           QDir::Files, QDir::Name | QDir::Reversed);
 
