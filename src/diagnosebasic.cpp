@@ -238,7 +238,8 @@ bool DiagnoseBasic::missingMasters() const
 
   QStringList esps = m_MOInfo->findFiles("",
       [] (const QString &fileName) -> bool { return fileName.endsWith(".esp", Qt::CaseInsensitive)
-                                                  || fileName.endsWith(".esm", Qt::CaseInsensitive); });
+                                                  || fileName.endsWith(".esm", Qt::CaseInsensitive)
+                                                  || fileName.endsWith(".esl", Qt::CaseInsensitive); });
   // gather enabled masters first
   for (const QString &esp : esps) {
     QString baseName = QFileInfo(esp).fileName();

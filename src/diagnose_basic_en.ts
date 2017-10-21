@@ -44,64 +44,64 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="338"/>
+        <location filename="diagnosebasic.cpp" line="339"/>
         <source>There was an error reported recently</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="340"/>
+        <location filename="diagnosebasic.cpp" line="341"/>
         <source>There are files in your overwrite mod</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="342"/>
+        <location filename="diagnosebasic.cpp" line="343"/>
         <source>Your font configuration may be broken</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="344"/>
+        <location filename="diagnosebasic.cpp" line="345"/>
         <source>Nitpick installed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="346"/>
+        <location filename="diagnosebasic.cpp" line="347"/>
         <source>Ini Tweaks overwritten</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="348"/>
+        <location filename="diagnosebasic.cpp" line="349"/>
         <source>Missing Masters</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="350"/>
-        <location filename="diagnosebasic.cpp" line="389"/>
-        <location filename="diagnosebasic.cpp" line="405"/>
+        <location filename="diagnosebasic.cpp" line="351"/>
+        <location filename="diagnosebasic.cpp" line="390"/>
+        <location filename="diagnosebasic.cpp" line="406"/>
         <source>invalid problem key %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="360"/>
+        <location filename="diagnosebasic.cpp" line="361"/>
         <source>Files in the &lt;font color=&quot;red&quot;&gt;&lt;i&gt;Overwrite&lt;/i&gt;&lt;/font&gt; mod are are usually files created by an external tool (i.e. Wrye Bash, Automatic Variants, ...).&lt;br&gt;It is advisable you empty the Overwrite directory by moving those files to an existing mod. You can do this by double-clicking the &lt;font color=&quot;red&quot;&gt;&lt;i&gt;Overwrite&lt;/i&gt;&lt;/font&gt; mod and use drag&amp;drop to move the files to a mod.&lt;br&gt;Alternatively, right-click on &lt;font color=&quot;red&quot;&gt;&lt;i&gt;Overwrite&lt;/i&gt;&lt;/font&gt; and create a new regular mod from the files there.&lt;br&gt;&lt;br&gt;Why is this necessary? Generated files may depend on the other mods active in a profile and may thus be incompatible with a different profile (i.e. bashed patches from Wrye Bash). On the other hand the file may be necessary in all profiles (i.e. dlc esms after cleaning with TESVEdit)&lt;br&gt;This can NOT be automated you HAVE to read up on the tools you use and make an educated decision.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="368"/>
+        <location filename="diagnosebasic.cpp" line="369"/>
         <source>Your current configuration seems to reference a font that is not installed. You may see only boxes instead of letters.&lt;br&gt;The font configuration is in Data\interface\fontconfig.txt. Most likely you have a broken installation of a font replacer mod.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="371"/>
+        <location filename="diagnosebasic.cpp" line="372"/>
         <source>You have the nitpick skse plugin installed. This plugin is not needed with Mod Organizer because MO already offers the same functionality. Worse: The two solutions may conflict so it&apos;s strongly suggested you remove this plugin.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="375"/>
+        <location filename="diagnosebasic.cpp" line="376"/>
         <source>Settings provided in ini tweaks have been overwritten in-game or in an applications.&lt;br&gt;These overwrites are stored in a separate file (&lt;i&gt;profile_tweaks.ini&lt;/i&gt; within the profile directory)&lt;br&gt;to keep ini-tweaks in their original state but you should really get rid of this file as there is&lt;br&gt;no tool support in MO to work on it. &lt;br&gt;Advice: Copy settings you want to keep to an appropriate ini tweak, then delete &lt;i&gt;profile_tweaks.ini&lt;/i&gt;.&lt;br&gt;Hitting the &lt;i&gt;Fix&lt;/i&gt; button will delete that file</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="384"/>
+        <location filename="diagnosebasic.cpp" line="385"/>
         <source>The masters for some plugins (esp/esm) are not enabled.&lt;br&gt;The game will crash unless you install and enable the following plugins: </source>
         <translation type="unfinished"></translation>
     </message>
