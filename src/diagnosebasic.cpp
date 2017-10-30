@@ -383,7 +383,7 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
              + "<hr><i>profile_tweaks.ini:</i><pre>" + fileContent + "</pre>";
     } break;
     case PROBLEM_MISSINGMASTERS: {
-      return tr("The masters for some plugins (esp/esm) are not enabled.<br>"
+      return tr("The masters for some plugins (esp/esl/esm) are not enabled.<br>"
                 "The game will crash unless you install and enable the following plugins: ")
              + "<ul><li>" + SetJoin(m_MissingMasters, "</li><li>") + "</li></ul>";
     } break;
