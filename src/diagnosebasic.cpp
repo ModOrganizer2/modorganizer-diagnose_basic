@@ -284,11 +284,11 @@ bool DiagnoseBasic::invalidFontConfig() const
     return false;
   }
 
-  std::tr1::regex exp("^fontlib \"([^\"]*)\"$");
+  std::regex exp("^fontlib \"([^\"]*)\"$");
   while (!config.atEnd()) {
     QByteArray row = config.readLine();
-    std::tr1::cmatch match;
-    if (std::tr1::regex_search(row.constData(), match, exp)) {
+    std::cmatch match;
+    if (std::regex_search(row.constData(), match, exp)) {
       std::string temp = match[1];
       QString path(temp.c_str());
       bool isDefault = false;
