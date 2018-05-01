@@ -113,7 +113,7 @@ QList<PluginSetting> DiagnoseBasic::settings() const
       << PluginSetting("check_font", tr("Warn when the font configuration refers to files that aren't installed"), true)
       << PluginSetting("check_conflict", tr("Warn when mods are installed that conflict with MO functionality"), true)
       << PluginSetting("check_missingmasters", tr("Warn when there are esps with missing masters"), true)
-      << PluginSetting("check_alternategames", tr("Warn when an installed mod came from an alternative game source"), true)
+      << PluginSetting("check_alternategames", tr("Warn when an installed mod came from an alternative game source"), false)
       << PluginSetting("ow_ignore_empty", tr("Ignore empty directories when checking overwrite directory"), false)
       << PluginSetting("ow_ignore_log", tr("Ignore .log files and empty directories when checking overwrite directory"), false)
      ;
