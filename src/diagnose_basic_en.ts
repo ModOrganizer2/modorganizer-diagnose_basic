@@ -80,13 +80,14 @@
     </message>
     <message>
         <location filename="diagnosebasic.cpp" line="366"/>
-        <source>At least one mod is using an alternative game source</source>
+        <source>At least one unverified mod is using an alternative game source</source>
+        <oldsource>At least one mod is using an alternative game source</oldsource>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="diagnosebasic.cpp" line="368"/>
-        <location filename="diagnosebasic.cpp" line="411"/>
-        <location filename="diagnosebasic.cpp" line="427"/>
+        <location filename="diagnosebasic.cpp" line="415"/>
+        <location filename="diagnosebasic.cpp" line="431"/>
         <source>invalid problem key %1</source>
         <translation type="unfinished"></translation>
     </message>
@@ -117,7 +118,7 @@
     </message>
     <message>
         <location filename="diagnosebasic.cpp" line="407"/>
-        <source>You have at least one active mod installed from an alternative game source.&lt;br&gt;Depending on the type of mod, this may require converting various files to run correctly.</source>
+        <source>You have at least one active mod installed from an alternative game source.&lt;br&gt;This means that the mod was downloaded from a game source which does not match&lt;br&gt;the expected primary game.&lt;br&gt;&lt;br&gt;Depending on the type of mod, this may require converting various files to run correctly.&lt;br&gt;&lt;br&gt;Advice: Once you have verified the mod is working correctly, you can use the context menu&lt;br&gt;and select &quot;Mark as converted/working&quot; to remove the flag and warning.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
