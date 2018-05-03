@@ -363,7 +363,7 @@ QString DiagnoseBasic::shortDescription(unsigned int key) const
     case PROBLEM_MISSINGMASTERS:
       return tr("Missing Masters");
     case PROBLEM_ALTERNATE:
-      return tr("At least one mod is using an alternative game source");
+      return tr("At least one unverified mod is using an alternative game source");
     default:
       throw MyException(tr("invalid problem key %1").arg(key));
   }
@@ -405,7 +405,11 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
     } break;
     case PROBLEM_ALTERNATE: {
       return tr("You have at least one active mod installed from an alternative game source.<br>"
-                "Depending on the type of mod, this may require converting various files to run correctly.");
+                "This means that the mod was downloaded from a game source which does not match<br>"
+                "the expected primary game.<br><br>"
+                "Depending on the type of mod, this may require converting various files to run correctly.<br><br>"
+                "Advice: Once you have verified the mod is working correctly, you can use the context menu<br>"
+                "and select \"Mark as converted/working\" to remove the flag and warning.");
     } break;
     default:
       throw MyException(tr("invalid problem key %1").arg(key));
