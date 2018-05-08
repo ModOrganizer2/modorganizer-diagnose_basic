@@ -113,6 +113,7 @@ QList<PluginSetting> DiagnoseBasic::settings() const
       << PluginSetting("check_font", tr("Warn when the font configuration refers to files that aren't installed"), true)
       << PluginSetting("check_conflict", tr("Warn when mods are installed that conflict with MO functionality"), true)
       << PluginSetting("check_missingmasters", tr("Warn when there are esps with missing masters"), true)
+      << PluginSetting("check_alternategames", tr("Warn when an installed mod came from an alternative game source"), false)
       << PluginSetting("ow_ignore_empty", tr("Ignore empty directories when checking overwrite directory"), false)
       << PluginSetting("ow_ignore_log", tr("Ignore .log files and empty directories when checking overwrite directory"), false)
      ;
@@ -263,6 +264,16 @@ bool DiagnoseBasic::missingMasters() const
   return !m_MissingMasters.empty();
 }
 
+bool DiagnoseBasic::alternateGame() const
+{
+  QStringList mods = m_MOInfo->modList()->allMods();
+  for (QString mod : mods) {
+    if (m_MOInfo->modList()->state(mod) & MOBase::IModList::STATE_ALTERNATE &&
+        m_MOInfo->modList()->state(mod) & MOBase::IModList::STATE_ACTIVE) return true;
+  }
+  return false;
+}
+
 bool DiagnoseBasic::invalidFontConfig() const
 {
   if ((m_MOInfo->managedGame()->gameName() != "Skyrim") && (m_MOInfo->managedGame()->gameName() != "SkyrimSE"))  {
@@ -284,11 +295,11 @@ bool DiagnoseBasic::invalidFontConfig() const
     return false;
   }
 
-  std::tr1::regex exp("^fontlib \"([^\"]*)\"$");
+  std::regex exp("^fontlib \"([^\"]*)\"$");
   while (!config.atEnd()) {
     QByteArray row = config.readLine();
-    std::tr1::cmatch match;
-    if (std::tr1::regex_search(row.constData(), match, exp)) {
+    std::cmatch match;
+    if (std::regex_search(row.constData(), match, exp)) {
       std::string temp = match[1];
       QString path(temp.c_str());
       bool isDefault = false;
@@ -326,6 +337,9 @@ std::vector<unsigned int> DiagnoseBasic::activeProblems() const
   if (m_MOInfo->pluginSetting(name(), "check_missingmasters").toBool() && missingMasters()) {
     result.push_back(PROBLEM_MISSINGMASTERS);
   }
+  if (m_MOInfo->pluginSetting(name(), "check_alternategames").toBool() && alternateGame()) {
+    result.push_back(PROBLEM_ALTERNATE);
+  }
   if (QFile::exists(m_MOInfo->profilePath() + "/profile_tweaks.ini")) {
     result.push_back(PROBLEM_PROFILETWEAKS);
   }
@@ -348,6 +362,8 @@ QString DiagnoseBasic::shortDescription(unsigned int key) const
       return tr("Ini Tweaks overwritten");
     case PROBLEM_MISSINGMASTERS:
       return tr("Missing Masters");
+    case PROBLEM_ALTERNATE:
+      return tr("At least one unverified mod is using an alternative game source");
     default:
       throw MyException(tr("invalid problem key %1").arg(key));
   }
@@ -386,6 +402,14 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
       return tr("The masters for some plugins (esp/esl/esm) are not enabled.<br>"
                 "The game will crash unless you install and enable the following plugins: ")
              + "<ul><li>" + SetJoin(m_MissingMasters, "</li><li>") + "</li></ul>";
+    } break;
+    case PROBLEM_ALTERNATE: {
+      return tr("You have at least one active mod installed from an alternative game source.<br>"
+                "This means that the mod was downloaded from a game source which does not match<br>"
+                "the expected primary game.<br><br>"
+                "Depending on the type of mod, this may require converting various files to run correctly.<br><br>"
+                "Advice: Once you have verified the mod is working correctly, you can use the context menu<br>"
+                "and select \"Mark as converted/working\" to remove the flag and warning.");
     } break;
     default:
       throw MyException(tr("invalid problem key %1").arg(key));

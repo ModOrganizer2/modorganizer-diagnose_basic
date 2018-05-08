@@ -67,6 +67,7 @@ private:
   bool nitpickInstalled() const;
   bool assetOrder() const;
   bool missingMasters() const;
+  bool alternateGame() const;
 
 private:
 
@@ -76,6 +77,7 @@ private:
   static const unsigned int PROBLEM_NITPICKINSTALLED = 4;
   static const unsigned int PROBLEM_PROFILETWEAKS = 7;
   static const unsigned int PROBLEM_MISSINGMASTERS = 8;
+  static const unsigned int PROBLEM_ALTERNATE = 9;
 
   static const unsigned int NUM_CONTEXT_ROWS = 5;
 
