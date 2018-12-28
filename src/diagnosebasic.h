@@ -68,6 +68,7 @@ private:
   bool assetOrder() const;
   bool missingMasters() const;
   bool alternateGame() const;
+  bool fileAttributes(const QString &executable) const;
 
 private:
 

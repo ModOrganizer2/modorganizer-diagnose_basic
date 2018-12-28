@@ -25,6 +25,7 @@
 #include <utility.h>
 #include <imodlist.h>
 #include <ipluginlist.h>
+#include <imodinterface.h>
 
 #include <QtPlugin>
 #include <QFile>
@@ -34,6 +35,9 @@
 #include <QCoreApplication>
 #include <QMessageBox>
 #include <QDateTime>
+#include <QProgressDialog>
+#include <QLabel>
+#include <QPushButton>
 
 #include <regex>
 #include <functional>
@@ -50,6 +54,15 @@
 
 
 using namespace MOBase;
+
+#define BAD_ATTRIBUTES (FILE_ATTRIBUTE_READONLY            | \
+                        FILE_ATTRIBUTE_NOT_CONTENT_INDEXED | \
+                        FILE_ATTRIBUTE_UNPINNED            | \
+                        FILE_ATTRIBUTE_SYSTEM              | \
+                        FILE_ATTRIBUTE_HIDDEN              | \
+                        FILE_ATTRIBUTE_OFFLINE             | \
+                        FILE_ATTRIBUTE_NO_SCRUB_DATA       | \
+                        FILE_ATTRIBUTE_PINNED              )
 
 
 DiagnoseBasic::DiagnoseBasic()
@@ -76,6 +89,7 @@ bool DiagnoseBasic::init(IOrganizer *moInfo)
   m_MOInfo->pluginList()->onPluginStateChanged([&] (const QString &, IPluginList::PluginStates) {
     invalidate();
   });
+  m_MOInfo->onAboutToRun([&] (const QString &executable) { return fileAttributes(executable); });
 
   return true;
 }
@@ -97,7 +111,7 @@ QString DiagnoseBasic::description() const
 
 VersionInfo DiagnoseBasic::version() const
 {
-  return VersionInfo(1, 1, 2, VersionInfo::RELEASE_FINAL);
+  return VersionInfo(1, 1, 3, VersionInfo::RELEASE_FINAL);
 }
 
 bool DiagnoseBasic::isActive() const
@@ -108,12 +122,13 @@ bool DiagnoseBasic::isActive() const
 QList<PluginSetting> DiagnoseBasic::settings() const
 {
   return QList<PluginSetting>()
-      << PluginSetting("check_errorlog", tr("Warn when an error occured last time an application was run"), true)
+      << PluginSetting("check_errorlog", tr("Warn when an error occurred last time an application was run"), true)
       << PluginSetting("check_overwrite", tr("Warn when there are files in the overwrite directory"), true)
       << PluginSetting("check_font", tr("Warn when the font configuration refers to files that aren't installed"), true)
       << PluginSetting("check_conflict", tr("Warn when mods are installed that conflict with MO functionality"), true)
       << PluginSetting("check_missingmasters", tr("Warn when there are esps with missing masters"), true)
       << PluginSetting("check_alternategames", tr("Warn when an installed mod came from an alternative game source"), false)
+      << PluginSetting("check_fileattributes", tr("Warn when files have unwanted attributes"), true)
       << PluginSetting("ow_ignore_empty", tr("Ignore empty directories when checking overwrite directory"), false)
       << PluginSetting("ow_ignore_log", tr("Ignore .log files and empty directories when checking overwrite directory"), false)
      ;
@@ -316,6 +331,154 @@ bool DiagnoseBasic::invalidFontConfig() const
     }
   }
   return false;
+}
+
+static bool checkFileAttributes(const QString &path)
+{
+  WCHAR w_path[32767];
+  memset(w_path, 0, sizeof(w_path));
+  path.toWCharArray(w_path);
+
+  DWORD attrs = GetFileAttributes(w_path);
+  if (attrs != INVALID_FILE_ATTRIBUTES) {
+    if (!(attrs & FILE_ATTRIBUTE_ARCHIVE)
+        && (attrs & BAD_ATTRIBUTES)) {
+      return true;
+    }
+  } else {
+    DWORD error = ::GetLastError();
+    qWarning(QString("Unable to get file attributes for %1 (error %2)").arg(w_path).arg(error).toLocal8Bit());
+  }
+  return false;
+}
+
+static bool fixFileAttributes(const QString &path)
+{
+  bool success = true;
+
+  WCHAR w_path[32767];
+  memset(w_path, 0, sizeof(w_path));
+  path.toWCharArray(w_path);
+
+  DWORD attrs = GetFileAttributes(w_path);
+  if (attrs != INVALID_FILE_ATTRIBUTES) {
+    if (attrs & BAD_ATTRIBUTES) {
+      attrs &= ~BAD_ATTRIBUTES;
+      if (!SetFileAttributes(w_path, attrs)) {
+        DWORD error = GetLastError();
+        qWarning(QString("Unable to set file attributes for %1 (error %2)").arg(path).arg(error).toLocal8Bit());
+        success = false;
+      }
+    }
+  }
+
+  return success;
+}
+
+bool DiagnoseBasic::fileAttributes(const QString &executable) const
+{
+  if (!m_MOInfo->pluginSetting(name(), "check_fileattributes").toBool())
+    return true;
+
+  // Only run for Skyrim SE or Fallout 4
+  if (m_MOInfo->managedGame()->gameShortName().compare("skyrimse", Qt::CaseInsensitive)
+      && m_MOInfo->managedGame()->gameShortName().compare("skyrimvr", Qt::CaseInsensitive)
+      && m_MOInfo->managedGame()->gameShortName().compare("fallout4", Qt::CaseInsensitive)
+      && m_MOInfo->managedGame()->gameShortName().compare("fallout4vr", Qt::CaseInsensitive)) {
+    return true;
+  }
+
+  QStringList filesToFix;
+  QStringList directoriesToSearch;
+
+  // Search the game directory for problems
+  directoriesToSearch << m_MOInfo->managedGame()->dataDirectory().absolutePath();
+
+  // Find the active mods to search them too
+  for (QString mod : m_MOInfo->modList()->allMods()) {
+    if (m_MOInfo->modList()->state(mod) & MOBase::IModList::STATE_ACTIVE) {
+      directoriesToSearch << m_MOInfo->getMod(mod)->absolutePath();
+    }
+  }
+
+  // Find the subdirectories of all the directories
+  for (int i = 0; i < directoriesToSearch.length(); i++) {
+    for (QString dir : QDir(directoriesToSearch[i]).entryList(QDir::Hidden|QDir::AllDirs|QDir::NoDotAndDotDot)) {
+      directoriesToSearch << directoriesToSearch[i] + "\\" + dir;
+    }
+  }
+
+  // Set up a progress bar since this can take a while
+  QPushButton *progressButton = new QPushButton("Cancel");
+  progressButton->setEnabled(false);
+
+  QLabel *progressLabel = new QLabel;
+  progressLabel->setText(tr("File attribute checker\nSearching for problems..."));
+  progressLabel->setAlignment(Qt::AlignCenter);
+
+  QProgressDialog dialog;
+  dialog.setWindowModality(Qt::ApplicationModal);
+  dialog.setCancelButton(progressButton);
+  dialog.setLabel(progressLabel);
+  dialog.setMinimumDuration(1);
+  dialog.show();
+  dialog.setMaximum(directoriesToSearch.length());
+
+  // Find problems with the directories and files
+  for (int i = 0; i < directoriesToSearch.length(); i++) {
+    QString *dirPath = &directoriesToSearch[i];
+    QString fixedPath = QString("\\\\?\\%1").arg(QDir::toNativeSeparators(*dirPath));
+    if (checkFileAttributes(fixedPath))
+      filesToFix << fixedPath;
+
+    for (QString file : QDir(*dirPath).entryList(QDir::Hidden|QDir::AllEntries|QDir::NoDotAndDotDot)) {
+      fixedPath = QString("\\\\?\\%1").arg(QDir::toNativeSeparators(*dirPath + "\\" + file));
+      if (checkFileAttributes(fixedPath))
+        filesToFix << fixedPath;
+    }
+    dialog.setValue(i);
+  }
+
+  if (filesToFix.length() == 0) {
+    return true;
+  }
+
+  QMessageBox::StandardButton userResponse = QMessageBox::question(nullptr, tr("Invalid file attributes found"),
+          tr("One or more of your files has attributes that may prevent the game from reading the files. "
+              "This can result in missing plugins, missing textures, and other such problems.\n\n"
+              "Fix the file attributes?"),
+          QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+  if (userResponse == QMessageBox::Cancel) {
+    qDebug() << "User canceled executable launch due to file attributes";
+    return false;
+  }
+  else if (userResponse == QMessageBox::No) {
+    return true;
+  }
+
+  // Reset progress bar
+  progressLabel->setText(tr("File attribute checker\nFixing file attributes..."));
+  dialog.setValue(0);
+  dialog.setMaximum(filesToFix.length());
+
+  // Start iterating through files fixing problems
+  bool success = true;
+  for (int i = 0; i < filesToFix.length(); i++) {
+    if (!fixFileAttributes(filesToFix[i]))
+      success = false;
+    dialog.setValue(i);
+  }
+
+  if (!success) {
+    if (QMessageBox::question(nullptr, tr("Unable to set file attributes"),
+          tr("Mod Organizer was unable to fix the file attributes of at least one file.\n\n"
+             "Continue launching %1?").arg(executable),
+          QMessageBox::Yes | QMessageBox::No) == QMessageBox::No) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 std::vector<unsigned int> DiagnoseBasic::activeProblems() const

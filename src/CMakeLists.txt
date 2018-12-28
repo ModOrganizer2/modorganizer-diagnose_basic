@@ -34,7 +34,7 @@ SET(lib_path "${project_path}/../../install/libs")
 INCLUDE_DIRECTORIES(${project_path}/uibase/src)
 LINK_DIRECTORIES(${lib_path})
 
-
+ADD_DEFINITIONS(-DUNICODE -D_UNICODE)
 ADD_LIBRARY(${PROJ_NAME} SHARED ${${PROJ_NAME}_HDRS} ${${PROJ_NAME}_SRCS} ${${PROJ_NAME}_UIHDRS} ${${PROJ_NAME}_translations_qm})
 TARGET_LINK_LIBRARIES(${PROJ_NAME}
                       Qt5::Widgets
