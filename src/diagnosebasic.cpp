@@ -55,16 +55,6 @@
 
 using namespace MOBase;
 
-#define BAD_ATTRIBUTES (FILE_ATTRIBUTE_READONLY            | \
-                        FILE_ATTRIBUTE_NOT_CONTENT_INDEXED | \
-                        FILE_ATTRIBUTE_UNPINNED            | \
-                        FILE_ATTRIBUTE_SYSTEM              | \
-                        FILE_ATTRIBUTE_HIDDEN              | \
-                        FILE_ATTRIBUTE_OFFLINE             | \
-                        FILE_ATTRIBUTE_NO_SCRUB_DATA       | \
-                        FILE_ATTRIBUTE_PINNED              )
-
-
 DiagnoseBasic::DiagnoseBasic()
   : m_MOInfo(nullptr)
 {
@@ -128,7 +118,7 @@ QList<PluginSetting> DiagnoseBasic::settings() const
       << PluginSetting("check_conflict", tr("Warn when mods are installed that conflict with MO functionality"), true)
       << PluginSetting("check_missingmasters", tr("Warn when there are esps with missing masters"), true)
       << PluginSetting("check_alternategames", tr("Warn when an installed mod came from an alternative game source"), false)
-      << PluginSetting("check_fileattributes", tr("Warn when files have unwanted attributes"), true)
+      << PluginSetting("check_fileattributes", tr("Warn when files have unwanted attributes"), false)
       << PluginSetting("ow_ignore_empty", tr("Ignore empty directories when checking overwrite directory"), false)
       << PluginSetting("ow_ignore_log", tr("Ignore .log files and empty directories when checking overwrite directory"), false)
      ;
@@ -341,8 +331,7 @@ static bool checkFileAttributes(const QString &path)
 
   DWORD attrs = GetFileAttributes(w_path);
   if (attrs != INVALID_FILE_ATTRIBUTES) {
-    if (!(attrs & FILE_ATTRIBUTE_ARCHIVE)
-        && (attrs & BAD_ATTRIBUTES)) {
+    if (!(attrs & (FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_NORMAL))) {
       return true;
     }
   } else {
@@ -362,13 +351,15 @@ static bool fixFileAttributes(const QString &path)
 
   DWORD attrs = GetFileAttributes(w_path);
   if (attrs != INVALID_FILE_ATTRIBUTES) {
-    if (attrs & BAD_ATTRIBUTES) {
-      attrs &= ~BAD_ATTRIBUTES;
-      if (!SetFileAttributes(w_path, attrs)) {
-        DWORD error = GetLastError();
-        qWarning(QString("Unable to set file attributes for %1 (error %2)").arg(path).arg(error).toLocal8Bit());
-        success = false;
-      }
+    if (attrs & FILE_ATTRIBUTE_ARCHIVE) {
+      attrs = FILE_ATTRIBUTE_ARCHIVE;
+    } else {
+      attrs = 0;
+    }
+    if (!SetFileAttributes(w_path, attrs)) {
+      DWORD error = GetLastError();
+      qWarning(QString("Unable to set file attributes for %1 (error %2)").arg(path).arg(error).toLocal8Bit());
+      success = false;
     }
   }
 
@@ -379,14 +370,6 @@ bool DiagnoseBasic::fileAttributes(const QString &executable) const
 {
   if (!m_MOInfo->pluginSetting(name(), "check_fileattributes").toBool())
     return true;
-
-  // Only run for Skyrim SE or Fallout 4
-  if (m_MOInfo->managedGame()->gameShortName().compare("skyrimse", Qt::CaseInsensitive)
-      && m_MOInfo->managedGame()->gameShortName().compare("skyrimvr", Qt::CaseInsensitive)
-      && m_MOInfo->managedGame()->gameShortName().compare("fallout4", Qt::CaseInsensitive)
-      && m_MOInfo->managedGame()->gameShortName().compare("fallout4vr", Qt::CaseInsensitive)) {
-    return true;
-  }
 
   QStringList filesToFix;
   QStringList directoriesToSearch;
