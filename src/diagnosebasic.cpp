@@ -331,7 +331,24 @@ static bool checkFileAttributes(const QString &path)
 
   DWORD attrs = GetFileAttributes(w_path);
   if (attrs != INVALID_FILE_ATTRIBUTES) {
-    if (!(attrs & (FILE_ATTRIBUTE_ARCHIVE|FILE_ATTRIBUTE_NORMAL))) {
+    if (!(attrs & FILE_ATTRIBUTE_ARCHIVE)
+        && !(attrs & FILE_ATTRIBUTE_NORMAL)
+        &&  (attrs & ~(FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_ARCHIVE))) {
+      QString debug;
+      debug += (attrs & FILE_ATTRIBUTE_DIRECTORY) ? "D" : " ";
+      debug += (attrs & FILE_ATTRIBUTE_ARCHIVE) ? "A" : " ";
+      debug += (attrs & FILE_ATTRIBUTE_READONLY) ? "R" : " ";
+      debug += (attrs & FILE_ATTRIBUTE_SYSTEM) ? "S" : " ";
+      debug += (attrs & FILE_ATTRIBUTE_HIDDEN) ? "H" : " ";
+      debug += (attrs & FILE_ATTRIBUTE_OFFLINE) ? "O" : " ";
+      debug += (attrs & FILE_ATTRIBUTE_NOT_CONTENT_INDEXED) ? "I" : " ";
+      debug += (attrs & FILE_ATTRIBUTE_NO_SCRUB_DATA) ? "X" : " ";
+      debug += (attrs & FILE_ATTRIBUTE_INTEGRITY_STREAM) ? "V" : " ";
+      debug += (attrs & FILE_ATTRIBUTE_PINNED) ? "P" : " ";
+      debug += (attrs & FILE_ATTRIBUTE_UNPINNED) ? "U" : " ";
+      debug += QString(" %1 %2").arg(attrs, 8, 16, QLatin1Char('0')).arg(path);
+      qDebug() << debug;
+
       return true;
     }
   } else {
