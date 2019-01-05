@@ -4,52 +4,52 @@
 <context>
     <name>DiagnoseBasic</name>
     <message>
-        <location filename="diagnosebasic.cpp" line="109"/>
+        <location filename="diagnosebasic.cpp" line="99"/>
         <source>Checks for problems unrelated to other plugins</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="125"/>
+        <location filename="diagnosebasic.cpp" line="115"/>
         <source>Warn when an error occurred last time an application was run</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="126"/>
+        <location filename="diagnosebasic.cpp" line="116"/>
         <source>Warn when there are files in the overwrite directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="127"/>
+        <location filename="diagnosebasic.cpp" line="117"/>
         <source>Warn when the font configuration refers to files that aren&apos;t installed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="128"/>
+        <location filename="diagnosebasic.cpp" line="118"/>
         <source>Warn when mods are installed that conflict with MO functionality</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="129"/>
+        <location filename="diagnosebasic.cpp" line="119"/>
         <source>Warn when there are esps with missing masters</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="130"/>
+        <location filename="diagnosebasic.cpp" line="120"/>
         <source>Warn when an installed mod came from an alternative game source</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="131"/>
+        <location filename="diagnosebasic.cpp" line="121"/>
         <source>Warn when files have unwanted attributes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="132"/>
+        <location filename="diagnosebasic.cpp" line="122"/>
         <source>Ignore empty directories when checking overwrite directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="diagnosebasic.cpp" line="133"/>
+        <location filename="diagnosebasic.cpp" line="123"/>
         <source>Ignore .log files and empty directories when checking overwrite directory</source>
         <translation type="unfinished"></translation>
     </message>

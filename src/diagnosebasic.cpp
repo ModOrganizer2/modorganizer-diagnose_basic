@@ -296,7 +296,7 @@ bool DiagnoseBasic::invalidFontConfig() const
   }
   QFile config(configPath);
   if (!config.open(QIODevice::ReadOnly | QIODevice::Text)) {
-    qDebug("failed to open %s", qPrintable(configPath));
+    qDebug("failed to open %s", qUtf8Printable(configPath));
     return false;
   }
 
