@@ -328,13 +328,16 @@ static bool checkFileAttributes(const QString &path)
   WCHAR w_path[32767];
   memset(w_path, 0, sizeof(w_path));
   path.toWCharArray(w_path);
-
+  
   DWORD attrs = GetFileAttributes(w_path);
   if (attrs != INVALID_FILE_ATTRIBUTES) {
     if (!(attrs & FILE_ATTRIBUTE_ARCHIVE)
         && !(attrs & FILE_ATTRIBUTE_NORMAL)
         &&  (attrs & ~(FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_ARCHIVE))) {
       QString debug;
+      debug += QString("%1 ").arg(attrs, 8, 16, QLatin1Char('0'));
+      
+      // A C D H I O P R S U V X Z
       debug += (attrs & FILE_ATTRIBUTE_DIRECTORY) ? "D" : " ";
       debug += (attrs & FILE_ATTRIBUTE_ARCHIVE) ? "A" : " ";
       debug += (attrs & FILE_ATTRIBUTE_READONLY) ? "R" : " ";
@@ -347,7 +350,10 @@ static bool checkFileAttributes(const QString &path)
       debug += (attrs & FILE_ATTRIBUTE_PINNED) ? "P" : " ";
       debug += (attrs & FILE_ATTRIBUTE_UNPINNED) ? "U" : " ";
       debug += (attrs & FILE_ATTRIBUTE_COMPRESSED) ? "C" : " ";
-      debug += QString(" %1 %2").arg(attrs, 8, 16, QLatin1Char('0')).arg(path);
+      debug += (attrs & FILE_ATTRIBUTE_SPARSE_FILE) ? "Z" : " ";
+
+      debug += QString(" %1").arg(path);
+
       qDebug() << debug;
 
       return true;
@@ -398,6 +404,38 @@ static bool fixFileAttributes(const QString &path)
                              NULL)) {
           DWORD error = GetLastError();
           qWarning(qUtf8Printable(QString("Unable to disable compresssion for file %1 (error %2)").arg(path).arg(error)));
+          success = false;
+        }
+        CloseHandle(hndl);
+      } else {
+        DWORD error = GetLastError();
+        qWarning(qUtf8Printable(QString("Unable to open file %1 (error %2)").arg(path).arg(error)));
+        success = false;
+      }
+    }
+
+    // Sparseness requires DeviceIoControl
+    if (attrs & FILE_ATTRIBUTE_SPARSE_FILE) {
+      HANDLE hndl = CreateFile(w_path, 
+                               GENERIC_READ | GENERIC_WRITE, 
+                               FILE_SHARE_READ | FILE_SHARE_WRITE,
+                               NULL, 
+                               OPEN_EXISTING, 
+                               FILE_ATTRIBUTE_NORMAL, 
+                               NULL);
+      if (hndl != INVALID_HANDLE_VALUE) {
+        FILE_SET_SPARSE_BUFFER setting = { FALSE };
+        DWORD bytesReturned = 0;
+        if (!DeviceIoControl(hndl,
+                             FSCTL_SET_SPARSE,
+                             &setting,
+                             sizeof(setting),
+                             NULL,
+                             0,
+                             &bytesReturned,
+                             NULL)) {
+          DWORD error = GetLastError();
+          qWarning(qUtf8Printable(QString("Unable to disable sparseness for file %1 (error %2)").arg(path).arg(error)));
           success = false;
         }
         CloseHandle(hndl);
