@@ -328,7 +328,7 @@ static bool checkFileAttributes(const QString &path)
   WCHAR w_path[32767];
   memset(w_path, 0, sizeof(w_path));
   path.toWCharArray(w_path);
-  
+
   DWORD attrs = GetFileAttributes(w_path);
   if (attrs != INVALID_FILE_ATTRIBUTES) {
     if (!(attrs & FILE_ATTRIBUTE_ARCHIVE)
@@ -336,7 +336,7 @@ static bool checkFileAttributes(const QString &path)
         &&  (attrs & ~(FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_ARCHIVE))) {
       QString debug;
       debug += QString("%1 ").arg(attrs, 8, 16, QLatin1Char('0'));
-      
+
       // A C D H I O P R S U V X Z
       debug += (attrs & FILE_ATTRIBUTE_DIRECTORY) ? "D" : " ";
       debug += (attrs & FILE_ATTRIBUTE_ARCHIVE) ? "A" : " ";
@@ -384,12 +384,12 @@ static bool fixFileAttributes(const QString &path)
 
     // Compression requires DeviceIoControl
     if (attrs & FILE_ATTRIBUTE_COMPRESSED) {
-      HANDLE hndl = CreateFile(w_path, 
-                               GENERIC_READ | GENERIC_WRITE, 
+      HANDLE hndl = CreateFile(w_path,
+                               GENERIC_READ | GENERIC_WRITE,
                                FILE_SHARE_READ | FILE_SHARE_WRITE,
-                               NULL, 
-                               OPEN_EXISTING, 
-                               FILE_ATTRIBUTE_NORMAL, 
+                               NULL,
+                               OPEN_EXISTING,
+                               FILE_ATTRIBUTE_NORMAL,
                                NULL);
       if (hndl != INVALID_HANDLE_VALUE) {
         USHORT compressionSetting = COMPRESSION_FORMAT_NONE;
@@ -403,7 +403,7 @@ static bool fixFileAttributes(const QString &path)
                              &bytesReturned,
                              NULL)) {
           DWORD error = GetLastError();
-          qWarning(qUtf8Printable(QString("Unable to disable compresssion for file %1 (error %2)").arg(path).arg(error)));
+          qWarning(qUtf8Printable(QString("Unable to disable compression for file %1 (error %2)").arg(path).arg(error)));
           success = false;
         }
         CloseHandle(hndl);
@@ -416,12 +416,12 @@ static bool fixFileAttributes(const QString &path)
 
     // Sparseness requires DeviceIoControl
     if (attrs & FILE_ATTRIBUTE_SPARSE_FILE) {
-      HANDLE hndl = CreateFile(w_path, 
-                               GENERIC_READ | GENERIC_WRITE, 
+      HANDLE hndl = CreateFile(w_path,
+                               GENERIC_READ | GENERIC_WRITE,
                                FILE_SHARE_READ | FILE_SHARE_WRITE,
-                               NULL, 
-                               OPEN_EXISTING, 
-                               FILE_ATTRIBUTE_NORMAL, 
+                               NULL,
+                               OPEN_EXISTING,
+                               FILE_ATTRIBUTE_NORMAL,
                                NULL);
       if (hndl != INVALID_HANDLE_VALUE) {
         FILE_SET_SPARSE_BUFFER setting = { FALSE };
@@ -443,6 +443,20 @@ static bool fixFileAttributes(const QString &path)
         DWORD error = GetLastError();
         qWarning(qUtf8Printable(QString("Unable to open file %1 (error %2)").arg(path).arg(error)));
         success = false;
+      }
+    }
+
+    // As a last ditch effort, set the archive flag
+    if (!success) {
+      attrs = GetFileAttributes(w_path);
+      if (attrs != INVALID_FILE_ATTRIBUTES) {
+        if (!SetFileAttributes(w_path, attrs | FILE_ATTRIBUTE_ARCHIVE)) {
+          DWORD error = GetLastError();
+          qWarning(qUtf8Printable(QString("Unable to set file attributes for %1 (error %2)").arg(path).arg(error)));
+        }
+      } else {
+        DWORD error = GetLastError();
+        qWarning(qUtf8Printable(QString("Unable to get file attributes for %1 (error %2)").arg(path).arg(error)));
       }
     }
 
