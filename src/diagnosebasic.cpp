@@ -453,6 +453,8 @@ static bool fixFileAttributes(const QString &path)
         if (!SetFileAttributes(w_path, attrs | FILE_ATTRIBUTE_ARCHIVE)) {
           DWORD error = GetLastError();
           qWarning(qUtf8Printable(QString("Unable to set file attributes for %1 (error %2)").arg(path).arg(error)));
+        } else {
+          success = true;
         }
       } else {
         DWORD error = GetLastError();
