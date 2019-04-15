@@ -134,6 +134,7 @@ private:
   mutable QString m_ErrorMessage;
   mutable QString m_NewestModlistBackup;
   mutable std::set<QString> m_MissingMasters;
+  mutable std::map<QString, std::set<QString>> m_PluginChildren;
 
 };
 

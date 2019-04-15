@@ -262,6 +262,7 @@ bool DiagnoseBasic::missingMasters() const
       for (const QString master : m_MOInfo->pluginList()->masters(baseName)) {
         if (enabledPlugins.find(master.toLower()) == enabledPlugins.end()) {
           m_MissingMasters.insert(master);
+		  m_PluginChildren[master].insert(baseName);
         }
       }
     }
@@ -650,9 +651,20 @@ QString DiagnoseBasic::fullDescription(unsigned int key) const
              + "<hr><i>profile_tweaks.ini:</i><pre>" + fileContent + "</pre>";
     } break;
     case PROBLEM_MISSINGMASTERS: {
+	  QString masterInfo;
+	  for (auto master : m_MissingMasters) {
+		  masterInfo += "<tr>";
+		  masterInfo += "<td style=\"padding-left: 20px\">" + master + "</td>";
+		  masterInfo += "<td style=\"padding-left: 20px\">" + SetJoin(m_PluginChildren[master], ", ") + "</td>";
+		  masterInfo += "</tr>";
+
+	  }
       return tr("The masters for some plugins (esp/esl/esm) are not enabled.<br>"
                 "The game will crash unless you install and enable the following plugins: ")
-             + "<ul><li>" + SetJoin(m_MissingMasters, "</li><li>") + "</li></ul>";
+             + "<br/><table><tr>"
+		     + "<th style=\"padding-left: 20px; text-align: left\">" + tr("Master") + "</th>"
+		     + "<th style=\"padding-left: 20px; text-align: left\">" + tr("Required By") + "</th></tr>"
+		     + masterInfo + "</table>";
     } break;
     case PROBLEM_ALTERNATE: {
       return tr("You have at least one active mod installed from an alternative game source.<br>"
