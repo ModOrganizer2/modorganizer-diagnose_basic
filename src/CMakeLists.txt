@@ -25,7 +25,7 @@ IF (Boost_FOUND)
   INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 ENDIF (Boost_FOUND)
 
-SET(default_project_path "${CMAKE_SOURCE_DIR}/..")
+SET(default_project_path "${DEPENDENCIES_DIR}/modorganizer_super")
 GET_FILENAME_COMPONENT(${default_project_path} ${default_project_path} REALPATH)
 
 SET(project_path "${default_project_path}" CACHE PATH "path to the other mo projects")
@@ -34,7 +34,7 @@ SET(lib_path "${project_path}/../../install/libs")
 INCLUDE_DIRECTORIES(${project_path}/uibase/src)
 LINK_DIRECTORIES(${lib_path})
 
-
+ADD_DEFINITIONS(-DUNICODE -D_UNICODE)
 ADD_LIBRARY(${PROJ_NAME} SHARED ${${PROJ_NAME}_HDRS} ${${PROJ_NAME}_SRCS} ${${PROJ_NAME}_UIHDRS} ${${PROJ_NAME}_translations_qm})
 TARGET_LINK_LIBRARIES(${PROJ_NAME}
                       Qt5::Widgets
