@@ -14,11 +14,11 @@ build_script:
 
     C:\Python37-x64\python.exe unimake.py -d c:\projects\modorganizer-build -s Appveyor_Build=True %APPVEYOR_PROJECT_NAME%
 artifacts:
-- path: ..\..\..\install\bin\plugins\diagnose_basic.dll
+- path: build\src\diagnose_basic.dll
   name: diagnose_basic_dll
-- path: ..\..\..\install\pdb\diagnose_basic.pdb
+- path: build\src\diagnose_basic.pdb
   name: diagnose_basic_pdb
-- path: ..\..\..\install\libs\diagnose_basic.lib
+- path: build\src\diagnose_basic.lib
   name: diagnose_basic_lib
 on_success:
   - ps: Set-Location -Path $env:APPVEYOR_BUILD_FOLDER
