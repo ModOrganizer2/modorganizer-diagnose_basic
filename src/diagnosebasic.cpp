@@ -19,7 +19,7 @@
 
 #include "diagnosebasic.h"
 
-#include "filenamestring.h"
+#include "ifiletree.h"
 #include "iplugingame.h"
 #include <report.h>
 #include <utility.h>
@@ -180,9 +180,9 @@ bool DiagnoseBasic::checkEmpty(QString const &path) const
 
   //Search files first
   for (QString const &f : dir.entryList()) {
-    FileNameString file(f);
+    QString file(f);
     if (! m_MOInfo->pluginSetting(name(), "ow_ignore_log").toBool() ||
-        ! file.endsWith(".log")) {
+        ! file.endsWith(".log", FileNameComparator::CaseSensitivity)) {
       return false;
     }
   }
@@ -243,9 +243,9 @@ bool DiagnoseBasic::missingMasters() const
   std::set<QString> enabledPlugins;
 
   QStringList esps = m_MOInfo->findFiles("",
-      [] (const QString &fileName) -> bool { return fileName.endsWith(".esp", Qt::CaseInsensitive)
-                                                  || fileName.endsWith(".esm", Qt::CaseInsensitive)
-                                                  || fileName.endsWith(".esl", Qt::CaseInsensitive); });
+      [] (const QString &fileName) -> bool { return fileName.endsWith(".esp", FileNameComparator::CaseSensitivity)
+                                                  || fileName.endsWith(".esm", FileNameComparator::CaseSensitivity)
+                                                  || fileName.endsWith(".esl", FileNameComparator::CaseSensitivity); });
   // gather enabled masters first
   for (const QString &esp : esps) {
     QString baseName = QFileInfo(esp).fileName();
@@ -310,7 +310,7 @@ bool DiagnoseBasic::invalidFontConfig() const
       QString path(temp.c_str());
       bool isDefault = false;
       for (const QString &def : defaultFonts) {
-        if (QString::compare(def, path, Qt::CaseInsensitive) == 0) {
+        if (QString::compare(def, path, FileNameComparator::CaseSensitivity) == 0) {
           isDefault = true;
           break;
         }
