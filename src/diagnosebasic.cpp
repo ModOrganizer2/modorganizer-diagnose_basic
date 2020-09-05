@@ -76,7 +76,7 @@ bool DiagnoseBasic::init(IOrganizer *moInfo)
                                          invalidate();
                                       });
   m_MOInfo->pluginList()->onRefreshed([&] () { invalidate(); });
-  m_MOInfo->pluginList()->onPluginStateChanged([&] (const QString &, IPluginList::PluginStates) {
+  m_MOInfo->pluginList()->onPluginStateChanged([&] (auto const& ) {
     invalidate();
   });
   m_MOInfo->onAboutToRun([&] (const QString &executable) { return fileAttributes(executable); });
