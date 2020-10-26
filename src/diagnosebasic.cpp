@@ -486,7 +486,7 @@ bool DiagnoseBasic::fileAttributes(const QString &executable) const
   // Find the active mods to search them too
   for (QString mod : m_MOInfo->modList()->allMods()) {
     if (m_MOInfo->modList()->state(mod) & MOBase::IModList::STATE_ACTIVE) {
-      directoriesToSearch << m_MOInfo->getMod(mod)->absolutePath();
+      directoriesToSearch << m_MOInfo->modList()->getMod(mod)->absolutePath();
     }
   }
 
