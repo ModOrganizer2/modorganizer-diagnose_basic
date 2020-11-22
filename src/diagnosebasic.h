@@ -27,6 +27,7 @@ along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
 #include <imodlist.h>
 #include <QString>
 #include <QSet>
+#include <QRegularExpression>
 
 
 class DiagnoseBasic : public QObject, public MOBase::IPlugin, public MOBase::IPluginDiagnose
@@ -81,6 +82,8 @@ private:
   static const unsigned int PROBLEM_ALTERNATE = 9;
 
   static const unsigned int NUM_CONTEXT_ROWS = 5;
+
+  static const QRegularExpression RE_LOG_FILE;
 
 private:
 
