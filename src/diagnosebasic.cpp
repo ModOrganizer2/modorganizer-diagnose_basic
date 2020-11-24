@@ -55,7 +55,7 @@
 
 using namespace MOBase;
 
-const QRegularExpression DiagnoseBasic::RE_LOG_FILE(".*log[0-9]*$");
+const QRegularExpression DiagnoseBasic::RE_LOG_FILE(".*[.]log[0-9]*$");
 
 DiagnoseBasic::DiagnoseBasic()
   : m_MOInfo(nullptr)
