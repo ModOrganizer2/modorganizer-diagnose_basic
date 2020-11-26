@@ -55,6 +55,8 @@
 
 using namespace MOBase;
 
+const QRegularExpression DiagnoseBasic::RE_LOG_FILE(".*[.]log[0-9]*$");
+
 DiagnoseBasic::DiagnoseBasic()
   : m_MOInfo(nullptr)
 {
@@ -179,10 +181,9 @@ bool DiagnoseBasic::checkEmpty(QString const &path) const
   dir.setFilter(QDir::Files | QDir::Hidden | QDir::System);
 
   //Search files first
-  for (QString const &f : dir.entryList()) {
-    QString file(f);
-    if (! m_MOInfo->pluginSetting(name(), "ow_ignore_log").toBool() ||
-        ! file.endsWith(".log", FileNameComparator::CaseSensitivity)) {
+  for (auto const &file : dir.entryList()) {
+    if (!m_MOInfo->pluginSetting(name(), "ow_ignore_log").toBool()
+        || !RE_LOG_FILE.match(file).hasMatch()) {
       return false;
     }
   }
