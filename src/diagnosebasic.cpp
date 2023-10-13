@@ -256,6 +256,7 @@ bool DiagnoseBasic::missingMasters() const
   }
 
   m_MissingMasters.clear();
+  m_PluginChildren.clear();
   // for each required master in each esp, test if it's in the list of enabled masters.
   for (const QString &esp : esps) {
     QString baseName = QFileInfo(esp).fileName();
