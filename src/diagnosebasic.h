@@ -20,22 +20,21 @@ along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef DIAGNOSEBASIC_H
 #define DIAGNOSEBASIC_H
 
-
-#include <iplugin.h>
-#include <iplugindiagnose.h>
-#include <imoinfo.h>
-#include <imodlist.h>
 #include <QString>
 #include <QSet>
 #include <QRegularExpression>
 
+#include <uibase/iplugin.h>
+#include <uibase/iplugindiagnose.h>
+#include <uibase/imoinfo.h>
+#include <uibase/imodlist.h>
 
 class DiagnoseBasic : public QObject, public MOBase::IPlugin, public MOBase::IPluginDiagnose
 {
   Q_OBJECT
   Q_INTERFACES(MOBase::IPlugin MOBase::IPluginDiagnose)
 #if QT_VERSION >= QT_VERSION_CHECK(5,0,0)
-  Q_PLUGIN_METADATA(IID "org.tannin.DiagnoseBasic" FILE "diagnosebasic.json")
+  Q_PLUGIN_METADATA(IID "org.tannin.DiagnoseBasic")
 #endif
 
 public:
