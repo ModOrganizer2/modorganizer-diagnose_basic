@@ -1,0 +1,3 @@
+{
+  "dependencies": ["mo2-cmake", "boost-assign", "boost-graph"]
+}
