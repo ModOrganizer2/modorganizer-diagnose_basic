@@ -19,13 +19,13 @@
 
 #include "diagnosebasic.h"
 
-#include "ifiletree.h"
-#include "iplugingame.h"
-#include <report.h>
-#include <utility.h>
-#include <imodlist.h>
-#include <ipluginlist.h>
-#include <imodinterface.h>
+#include <uibase/ifiletree.h>
+#include <uibase/iplugingame.h>
+#include <uibase/report.h>
+#include <uibase/utility.h>
+#include <uibase/imodlist.h>
+#include <uibase/ipluginlist.h>
+#include <uibase/imodinterface.h>
 
 #include <QtPlugin>
 #include <QFile>
