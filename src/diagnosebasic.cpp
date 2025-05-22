@@ -204,10 +204,22 @@ bool DiagnoseBasic::overwriteFiles() const
   //QString dirname(qApp->property("dataPath").toString() + "/overwrite");
   QString dirname(m_MOInfo->overwritePath());
   if (m_MOInfo->pluginSetting(name(), "ow_ignore_empty").toBool() ||
-      m_MOInfo->pluginSetting(name(), "ow_ignore_log").toBool()) {
+    m_MOInfo->pluginSetting(name(), "ow_ignore_log").toBool()) {
     return !checkEmpty(dirname);
   }
   QDir dir(dirname);
+  bool checkDirs = m_MOInfo->managedGame()->getModMappings().keys().size() > 1 || m_MOInfo->managedGame()->getModMappings().keys().first() != "";
+  if (checkDirs) {
+      bool empty = true;
+      for (auto dir : m_MOInfo->managedGame()->getModMappings().keys()) {
+          auto mapDir = QDir(dirname).filePath(dir);
+          if (QDir(mapDir).exists()) {
+              empty = QDir(mapDir).count() == 2; // account for . and ..
+          }
+          if (!empty) break;
+      }
+      return !empty;
+  }
   return dir.count() != 2; // account for . and ..
 }
 
