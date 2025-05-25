@@ -44,21 +44,12 @@
 #include <vector>
 #include <algorithm>
 
-#pragma warning( push, 2 )
-#include <boost/assign.hpp>
-#include <boost/graph/graph_traits.hpp>
-#include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/topological_sort.hpp>
-#include <boost/graph/connected_components.hpp>
-#pragma warning( pop )
-
-
 using namespace MOBase;
 
 const QRegularExpression DiagnoseBasic::RE_LOG_FILE(".*[.]log[0-9]*$");
 
 DiagnoseBasic::DiagnoseBasic()
-  : m_MOInfo(nullptr)
+    : m_MOInfo(nullptr)
 {
 }
 
@@ -66,22 +57,22 @@ bool DiagnoseBasic::init(IOrganizer *moInfo)
 {
   m_MOInfo = moInfo;
 
-  m_MOInfo->modList()->onModStateChanged([&] (const std::map<QString, IModList::ModStates>& mods) {
-                                           if (mods.contains("Overwrite")) invalidate();
-                                         });
-  m_MOInfo->modList()->onModMoved([&] (const QString&, int, int) {
+  m_MOInfo->modList()->onModStateChanged([&](const std::map<QString, IModList::ModStates> &mods)
+                                         {
+                                           if (mods.contains("Overwrite")) invalidate(); });
+  m_MOInfo->modList()->onModMoved([&](const QString &, int, int)
+                                  {
                                          // invalidates only the assetOrder check but there is currently no way to recheck individual
                                          // checks
-                                         invalidate();
-                                      });
-  m_MOInfo->pluginList()->onPluginMoved([&] (const QString&, int, int) {
-                                         invalidate();
-                                      });
-  m_MOInfo->pluginList()->onRefreshed([&] () { invalidate(); });
-  m_MOInfo->pluginList()->onPluginStateChanged([&] (auto const& ) {
-    invalidate();
-  });
-  m_MOInfo->onAboutToRun([&] (const QString &executable) { return fileAttributes(executable); });
+                                         invalidate(); });
+  m_MOInfo->pluginList()->onPluginMoved([&](const QString &, int, int)
+                                        { invalidate(); });
+  m_MOInfo->pluginList()->onRefreshed([&]()
+                                      { invalidate(); });
+  m_MOInfo->pluginList()->onPluginStateChanged([&](auto const &)
+                                               { invalidate(); });
+  m_MOInfo->onAboutToRun([&](const QString &executable)
+                         { return fileAttributes(executable); });
 
   return true;
 }
@@ -114,18 +105,16 @@ bool DiagnoseBasic::isActive() const
 QList<PluginSetting> DiagnoseBasic::settings() const
 {
   return QList<PluginSetting>()
-      << PluginSetting("check_errorlog", tr("Warn when an error occurred last time an application was run"), true)
-      << PluginSetting("check_overwrite", tr("Warn when there are files in the overwrite directory"), true)
-      << PluginSetting("check_font", tr("Warn when the font configuration refers to files that aren't installed"), true)
-      << PluginSetting("check_conflict", tr("Warn when mods are installed that conflict with MO functionality"), true)
-      << PluginSetting("check_missingmasters", tr("Warn when there are esps with missing masters"), true)
-      << PluginSetting("check_alternategames", tr("Warn when an installed mod came from an alternative game source"), false)
-      << PluginSetting("check_fileattributes", tr("Warn when files have unwanted attributes"), false)
-      << PluginSetting("ow_ignore_empty", tr("Ignore empty directories when checking overwrite directory"), false)
-      << PluginSetting("ow_ignore_log", tr("Ignore .log files and empty directories when checking overwrite directory"), false)
-     ;
+         << PluginSetting("check_errorlog", tr("Warn when an error occurred last time an application was run"), true)
+         << PluginSetting("check_overwrite", tr("Warn when there are files in the overwrite directory"), true)
+         << PluginSetting("check_font", tr("Warn when the font configuration refers to files that aren't installed"), true)
+         << PluginSetting("check_conflict", tr("Warn when mods are installed that conflict with MO functionality"), true)
+         << PluginSetting("check_missingmasters", tr("Warn when there are esps with missing masters"), true)
+         << PluginSetting("check_alternategames", tr("Warn when an installed mod came from an alternative game source"), false)
+         << PluginSetting("check_fileattributes", tr("Warn when files have unwanted attributes"), false)
+         << PluginSetting("ow_ignore_empty", tr("Ignore empty directories when checking overwrite directory"), false)
+         << PluginSetting("ow_ignore_log", tr("Ignore .log files and empty directories when checking overwrite directory"), false);
 }
-
 
 bool DiagnoseBasic::errorReported() const
 {
@@ -133,31 +122,41 @@ bool DiagnoseBasic::errorReported() const
   QFileInfoList files = dir.entryInfoList(QStringList("ModOrganizer_??_??_??_??_??.log"),
                                           QDir::Files, QDir::Name | QDir::Reversed);
 
-  if (files.count() > 0) {
+  if (files.count() > 0)
+  {
     QString logFile = files.at(0).absoluteFilePath();
     QFile file(logFile);
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
       char buffer[1024];
       int line = 0;
       qint64 lineLengths[NUM_CONTEXT_ROWS];
-      for (int i = 0; i < NUM_CONTEXT_ROWS; ++i) {
+      for (int i = 0; i < NUM_CONTEXT_ROWS; ++i)
+      {
         lineLengths[i] = 0;
       }
-      while (!file.atEnd()) {
+      while (!file.atEnd())
+      {
         lineLengths[line % NUM_CONTEXT_ROWS] = file.readLine(buffer, 1024) + 1;
-        if (strncmp(buffer, "ERROR", 5) == 0) {
+        if (strncmp(buffer, "ERROR", 5) == 0)
+        {
           qint64 sumChars = 0;
-          for (int i = 0; i < NUM_CONTEXT_ROWS; ++i) {
+          for (int i = 0; i < NUM_CONTEXT_ROWS; ++i)
+          {
             sumChars += lineLengths[i];
           }
           file.seek(file.pos() - sumChars);
           m_ErrorMessage = "";
-          for (int i = 0; i < 2 * NUM_CONTEXT_ROWS; ++i) {
+          for (int i = 0; i < 2 * NUM_CONTEXT_ROWS; ++i)
+          {
             file.readLine(buffer, 1024);
             QString lineString = QString::fromUtf8(buffer);
-            if (lineString.startsWith("ERROR")) {
+            if (lineString.startsWith("ERROR"))
+            {
               m_ErrorMessage += "<b>" + lineString + "</b>";
-            } else {
+            }
+            else
+            {
               m_ErrorMessage += lineString;
             }
           }
@@ -165,7 +164,8 @@ bool DiagnoseBasic::errorReported() const
         }
 
         // prevent this function from taking forever
-        if (line++ >= 50000) {
+        if (line++ >= 50000)
+        {
           break;
         }
       }
@@ -180,18 +180,21 @@ bool DiagnoseBasic::checkEmpty(QString const &path) const
   QDir dir(path);
   dir.setFilter(QDir::Files | QDir::Hidden | QDir::System);
 
-  //Search files first
-  for (auto const &file : dir.entryList()) {
-    if (!m_MOInfo->pluginSetting(name(), "ow_ignore_log").toBool()
-        || !RE_LOG_FILE.match(file).hasMatch()) {
+  // Search files first
+  for (auto const &file : dir.entryList())
+  {
+    if (!m_MOInfo->pluginSetting(name(), "ow_ignore_log").toBool() || !RE_LOG_FILE.match(file).hasMatch())
+    {
       return false;
     }
   }
 
-  //Then directories
+  // Then directories
   dir.setFilter(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::NoSymLinks);
-  for (QFileInfo const &subdir : dir.entryInfoList()) {
-    if (!checkEmpty(subdir.absoluteFilePath())) {
+  for (QFileInfo const &subdir : dir.entryInfoList())
+  {
+    if (!checkEmpty(subdir.absoluteFilePath()))
+    {
       return false;
     }
   }
@@ -201,24 +204,29 @@ bool DiagnoseBasic::checkEmpty(QString const &path) const
 
 bool DiagnoseBasic::overwriteFiles() const
 {
-  //QString dirname(qApp->property("dataPath").toString() + "/overwrite");
+  // QString dirname(qApp->property("dataPath").toString() + "/overwrite");
   QString dirname(m_MOInfo->overwritePath());
   if (m_MOInfo->pluginSetting(name(), "ow_ignore_empty").toBool() ||
-    m_MOInfo->pluginSetting(name(), "ow_ignore_log").toBool()) {
+      m_MOInfo->pluginSetting(name(), "ow_ignore_log").toBool())
+  {
     return !checkEmpty(dirname);
   }
   QDir dir(dirname);
   bool checkDirs = m_MOInfo->managedGame()->getModMappings().keys().size() > 1 || m_MOInfo->managedGame()->getModMappings().keys().first() != "";
-  if (checkDirs) {
-      bool empty = true;
-      for (auto dir : m_MOInfo->managedGame()->getModMappings().keys()) {
-          auto mapDir = QDir(dirname).filePath(dir);
-          if (QDir(mapDir).exists()) {
-              empty = QDir(mapDir).count() == 2; // account for . and ..
-          }
-          if (!empty) break;
+  if (checkDirs)
+  {
+    bool empty = true;
+    for (auto dir : m_MOInfo->managedGame()->getModMappings().keys())
+    {
+      auto mapDir = QDir(dirname).filePath(dir);
+      if (QDir(mapDir).exists())
+      {
+        empty = QDir(mapDir).count() == 2; // account for . and ..
       }
-      return !empty;
+      if (!empty)
+        break;
+    }
+    return !empty;
   }
   return dir.count() != 2; // account for . and ..
 }
@@ -230,9 +238,8 @@ bool DiagnoseBasic::nitpickInstalled() const
   return !path.isEmpty();
 }
 
-
 /// unused code to remove duplicates from a vector
-template<typename T>
+template <typename T>
 void makeUnique(std::vector<T> &vector)
 {
   std::set<T> done;
@@ -240,8 +247,10 @@ void makeUnique(std::vector<T> &vector)
   auto read = vector.begin();
   auto write = vector.begin();
 
-  for (; read != vector.end(); ++read) {
-    if (done.insert(*read).second) {
+  for (; read != vector.end(); ++read)
+  {
+    if (done.insert(*read).second)
+    {
       *write = *read;
       ++write;
     }
@@ -250,19 +259,19 @@ void makeUnique(std::vector<T> &vector)
   vector.erase(write, vector.end());
 }
 
-
 bool DiagnoseBasic::missingMasters() const
 {
   std::set<QString> enabledPlugins;
 
   QStringList esps = m_MOInfo->findFiles("",
-      [] (const QString &fileName) -> bool { return fileName.endsWith(".esp", FileNameComparator::CaseSensitivity)
-                                                  || fileName.endsWith(".esm", FileNameComparator::CaseSensitivity)
-                                                  || fileName.endsWith(".esl", FileNameComparator::CaseSensitivity); });
+                                         [](const QString &fileName) -> bool
+                                         { return fileName.endsWith(".esp", FileNameComparator::CaseSensitivity) || fileName.endsWith(".esm", FileNameComparator::CaseSensitivity) || fileName.endsWith(".esl", FileNameComparator::CaseSensitivity); });
   // gather enabled masters first
-  for (const QString &esp : esps) {
+  for (const QString &esp : esps)
+  {
     QString baseName = QFileInfo(esp).fileName();
-    if (m_MOInfo->pluginList()->state(baseName) == IPluginList::STATE_ACTIVE) {
+    if (m_MOInfo->pluginList()->state(baseName) == IPluginList::STATE_ACTIVE)
+    {
       enabledPlugins.insert(baseName.toLower());
     }
   }
@@ -270,13 +279,17 @@ bool DiagnoseBasic::missingMasters() const
   m_MissingMasters.clear();
   m_PluginChildren.clear();
   // for each required master in each esp, test if it's in the list of enabled masters.
-  for (const QString &esp : esps) {
+  for (const QString &esp : esps)
+  {
     QString baseName = QFileInfo(esp).fileName();
-    if (m_MOInfo->pluginList()->state(baseName) == IPluginList::STATE_ACTIVE) {
-      for (const QString master : m_MOInfo->pluginList()->masters(baseName)) {
-        if (enabledPlugins.find(master.toLower()) == enabledPlugins.end()) {
+    if (m_MOInfo->pluginList()->state(baseName) == IPluginList::STATE_ACTIVE)
+    {
+      for (const QString master : m_MOInfo->pluginList()->masters(baseName))
+      {
+        if (enabledPlugins.find(master.toLower()) == enabledPlugins.end())
+        {
           m_MissingMasters.insert(master);
-		  m_PluginChildren[master].insert(baseName);
+          m_PluginChildren[master].insert(baseName);
         }
       }
     }
@@ -287,51 +300,61 @@ bool DiagnoseBasic::missingMasters() const
 bool DiagnoseBasic::alternateGame() const
 {
   QStringList mods = m_MOInfo->modList()->allMods();
-  for (QString mod : mods) {
+  for (QString mod : mods)
+  {
     if (m_MOInfo->modList()->state(mod) & MOBase::IModList::STATE_ALTERNATE &&
-        m_MOInfo->modList()->state(mod) & MOBase::IModList::STATE_ACTIVE) return true;
+        m_MOInfo->modList()->state(mod) & MOBase::IModList::STATE_ACTIVE)
+      return true;
   }
   return false;
 }
 
 bool DiagnoseBasic::invalidFontConfig() const
 {
-  if ((m_MOInfo->managedGame()->gameName() != "Skyrim") && (m_MOInfo->managedGame()->gameShortName() != "SkyrimSE"))  {
+  if ((m_MOInfo->managedGame()->gameName() != "Skyrim") && (m_MOInfo->managedGame()->gameShortName() != "SkyrimSE"))
+  {
     // this check is only for skyrim
     return false;
   }
 
   // files from skyrim_interface.bsa
-  static std::vector<QString> defaultFonts = boost::assign::list_of("interface\\fonts_console.swf")
-                                                                   ("interface\\fonts_en.swf")
-                                                                   ("interface\\fonts_cclub.swf");
+  static std::vector<QString> defaultFonts{"interface\\fonts_console.swf",
+                                           "interface\\fonts_en.swf",
+                                           "interface\\fonts_cclub.swf"};
 
   QString configPath = m_MOInfo->resolvePath("interface/fontconfig.txt");
-  if (configPath.isEmpty()) {
+  if (configPath.isEmpty())
+  {
     return false;
   }
   QFile config(configPath);
-  if (!config.open(QIODevice::ReadOnly | QIODevice::Text)) {
+  if (!config.open(QIODevice::ReadOnly | QIODevice::Text))
+  {
     qDebug("failed to open %s", qUtf8Printable(configPath));
     return false;
   }
 
   std::regex exp("^fontlib \"([^\"]*)\"$");
-  while (!config.atEnd()) {
+  while (!config.atEnd())
+  {
     QByteArray row = config.readLine();
     std::cmatch match;
-    if (std::regex_search(row.constData(), match, exp)) {
+    if (std::regex_search(row.constData(), match, exp))
+    {
       std::string temp = match[1];
       QString path(temp.c_str());
       bool isDefault = false;
-      for (const QString &def : defaultFonts) {
-        if (QString::compare(def, path, FileNameComparator::CaseSensitivity) == 0) {
+      for (const QString &def : defaultFonts)
+      {
+        if (QString::compare(def, path, FileNameComparator::CaseSensitivity) == 0)
+        {
           isDefault = true;
           break;
         }
       }
 
-      if (!isDefault && m_MOInfo->resolvePath(path).isEmpty()) {
+      if (!isDefault && m_MOInfo->resolvePath(path).isEmpty())
+      {
         return true;
       }
     }
@@ -346,10 +369,10 @@ static bool checkFileAttributes(const QString &path)
   path.toWCharArray(w_path);
 
   DWORD attrs = GetFileAttributes(w_path);
-  if (attrs != INVALID_FILE_ATTRIBUTES) {
-    if (!(attrs & FILE_ATTRIBUTE_ARCHIVE)
-        && !(attrs & FILE_ATTRIBUTE_NORMAL)
-        &&  (attrs & ~(FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_ARCHIVE))) {
+  if (attrs != INVALID_FILE_ATTRIBUTES)
+  {
+    if (!(attrs & FILE_ATTRIBUTE_ARCHIVE) && !(attrs & FILE_ATTRIBUTE_NORMAL) && (attrs & ~(FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_ARCHIVE)))
+    {
       QString debug;
       debug += QString("%1 ").arg(attrs, 8, 16, QLatin1Char('0'));
 
@@ -374,7 +397,9 @@ static bool checkFileAttributes(const QString &path)
 
       return true;
     }
-  } else {
+  }
+  else
+  {
     DWORD error = ::GetLastError();
     qWarning(qUtf8Printable(QString("Unable to get file attributes for %1 (error %2)").arg(w_path).arg(error)));
   }
@@ -390,16 +415,19 @@ static bool fixFileAttributes(const QString &path)
   path.toWCharArray(w_path);
 
   DWORD attrs = GetFileAttributes(w_path);
-  if (attrs != INVALID_FILE_ATTRIBUTES) {
+  if (attrs != INVALID_FILE_ATTRIBUTES)
+  {
     // Clear all the attributes possible, except ARCHIVE, with SetFileAttributes
-    if (!SetFileAttributes(w_path, attrs & FILE_ATTRIBUTE_ARCHIVE ? FILE_ATTRIBUTE_ARCHIVE : 0)) {
+    if (!SetFileAttributes(w_path, attrs & FILE_ATTRIBUTE_ARCHIVE ? FILE_ATTRIBUTE_ARCHIVE : 0))
+    {
       DWORD error = GetLastError();
       qWarning(qUtf8Printable(QString("Unable to set file attributes for %1 (error %2)").arg(path).arg(error)));
       success = false;
     }
 
     // Compression requires DeviceIoControl
-    if (attrs & FILE_ATTRIBUTE_COMPRESSED) {
+    if (attrs & FILE_ATTRIBUTE_COMPRESSED)
+    {
       HANDLE hndl = CreateFile(w_path,
                                GENERIC_READ | GENERIC_WRITE,
                                FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -407,7 +435,8 @@ static bool fixFileAttributes(const QString &path)
                                OPEN_EXISTING,
                                FILE_ATTRIBUTE_NORMAL,
                                NULL);
-      if (hndl != INVALID_HANDLE_VALUE) {
+      if (hndl != INVALID_HANDLE_VALUE)
+      {
         USHORT compressionSetting = COMPRESSION_FORMAT_NONE;
         DWORD bytesReturned = 0;
         if (!DeviceIoControl(hndl,
@@ -417,13 +446,16 @@ static bool fixFileAttributes(const QString &path)
                              NULL,
                              0,
                              &bytesReturned,
-                             NULL)) {
+                             NULL))
+        {
           DWORD error = GetLastError();
           qWarning(qUtf8Printable(QString("Unable to disable compression for file %1 (error %2)").arg(path).arg(error)));
           success = false;
         }
         CloseHandle(hndl);
-      } else {
+      }
+      else
+      {
         DWORD error = GetLastError();
         qWarning(qUtf8Printable(QString("Unable to open file %1 (error %2)").arg(path).arg(error)));
         success = false;
@@ -431,7 +463,8 @@ static bool fixFileAttributes(const QString &path)
     }
 
     // Sparseness requires DeviceIoControl
-    if (attrs & FILE_ATTRIBUTE_SPARSE_FILE) {
+    if (attrs & FILE_ATTRIBUTE_SPARSE_FILE)
+    {
       HANDLE hndl = CreateFile(w_path,
                                GENERIC_READ | GENERIC_WRITE,
                                FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -439,8 +472,9 @@ static bool fixFileAttributes(const QString &path)
                                OPEN_EXISTING,
                                FILE_ATTRIBUTE_NORMAL,
                                NULL);
-      if (hndl != INVALID_HANDLE_VALUE) {
-        FILE_SET_SPARSE_BUFFER setting = { FALSE };
+      if (hndl != INVALID_HANDLE_VALUE)
+      {
+        FILE_SET_SPARSE_BUFFER setting = {FALSE};
         DWORD bytesReturned = 0;
         if (!DeviceIoControl(hndl,
                              FSCTL_SET_SPARSE,
@@ -449,13 +483,16 @@ static bool fixFileAttributes(const QString &path)
                              NULL,
                              0,
                              &bytesReturned,
-                             NULL)) {
+                             NULL))
+        {
           DWORD error = GetLastError();
           qWarning(qUtf8Printable(QString("Unable to disable sparseness for file %1 (error %2)").arg(path).arg(error)));
           success = false;
         }
         CloseHandle(hndl);
-      } else {
+      }
+      else
+      {
         DWORD error = GetLastError();
         qWarning(qUtf8Printable(QString("Unable to open file %1 (error %2)").arg(path).arg(error)));
         success = false;
@@ -463,22 +500,30 @@ static bool fixFileAttributes(const QString &path)
     }
 
     // As a last ditch effort, set the archive flag
-    if (!success) {
+    if (!success)
+    {
       attrs = GetFileAttributes(w_path);
-      if (attrs != INVALID_FILE_ATTRIBUTES) {
-        if (!SetFileAttributes(w_path, attrs | FILE_ATTRIBUTE_ARCHIVE)) {
+      if (attrs != INVALID_FILE_ATTRIBUTES)
+      {
+        if (!SetFileAttributes(w_path, attrs | FILE_ATTRIBUTE_ARCHIVE))
+        {
           DWORD error = GetLastError();
           qWarning(qUtf8Printable(QString("Unable to set file attributes for %1 (error %2)").arg(path).arg(error)));
-        } else {
+        }
+        else
+        {
           success = true;
         }
-      } else {
+      }
+      else
+      {
         DWORD error = GetLastError();
         qWarning(qUtf8Printable(QString("Unable to get file attributes for %1 (error %2)").arg(path).arg(error)));
       }
     }
-
-  } else {
+  }
+  else
+  {
     DWORD error = GetLastError();
     qWarning(qUtf8Printable(QString("Unable to get file attributes for %1 (error %2)").arg(path).arg(error)));
     success = false;
@@ -499,15 +544,19 @@ bool DiagnoseBasic::fileAttributes(const QString &executable) const
   directoriesToSearch << m_MOInfo->managedGame()->dataDirectory().absolutePath();
 
   // Find the active mods to search them too
-  for (QString mod : m_MOInfo->modList()->allMods()) {
-    if (m_MOInfo->modList()->state(mod) & MOBase::IModList::STATE_ACTIVE) {
+  for (QString mod : m_MOInfo->modList()->allMods())
+  {
+    if (m_MOInfo->modList()->state(mod) & MOBase::IModList::STATE_ACTIVE)
+    {
       directoriesToSearch << m_MOInfo->modList()->getMod(mod)->absolutePath();
     }
   }
 
   // Find the subdirectories of all the directories
-  for (int i = 0; i < directoriesToSearch.length(); i++) {
-    for (QString dir : QDir(directoriesToSearch[i]).entryList(QDir::Hidden|QDir::AllDirs|QDir::NoDotAndDotDot)) {
+  for (int i = 0; i < directoriesToSearch.length(); i++)
+  {
+    for (QString dir : QDir(directoriesToSearch[i]).entryList(QDir::Hidden | QDir::AllDirs | QDir::NoDotAndDotDot))
+    {
       directoriesToSearch << directoriesToSearch[i] + "\\" + dir;
     }
   }
@@ -529,13 +578,15 @@ bool DiagnoseBasic::fileAttributes(const QString &executable) const
   dialog.setMaximum(directoriesToSearch.length());
 
   // Find problems with the directories and files
-  for (int i = 0; i < directoriesToSearch.length(); i++) {
+  for (int i = 0; i < directoriesToSearch.length(); i++)
+  {
     QString *dirPath = &directoriesToSearch[i];
     QString fixedPath = QString("\\\\?\\%1").arg(QDir::toNativeSeparators(*dirPath));
     if (checkFileAttributes(fixedPath))
       filesToFix << fixedPath;
 
-    for (QString file : QDir(*dirPath).entryList(QDir::Hidden|QDir::AllEntries|QDir::NoDotAndDotDot)) {
+    for (QString file : QDir(*dirPath).entryList(QDir::Hidden | QDir::AllEntries | QDir::NoDotAndDotDot))
+    {
       fixedPath = QString("\\\\?\\%1").arg(QDir::toNativeSeparators(*dirPath + "\\" + file));
       if (checkFileAttributes(fixedPath))
         filesToFix << fixedPath;
@@ -543,20 +594,23 @@ bool DiagnoseBasic::fileAttributes(const QString &executable) const
     dialog.setValue(i);
   }
 
-  if (filesToFix.length() == 0) {
+  if (filesToFix.length() == 0)
+  {
     return true;
   }
 
   QMessageBox::StandardButton userResponse = QMessageBox::question(nullptr, tr("Invalid file attributes found"),
-          tr("One or more of your files has attributes that may prevent the game from reading the files. "
-              "This can result in missing plugins, missing textures, and other such problems.\n\n"
-              "Fix the file attributes?"),
-          QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-  if (userResponse == QMessageBox::Cancel) {
+                                                                   tr("One or more of your files has attributes that may prevent the game from reading the files. "
+                                                                      "This can result in missing plugins, missing textures, and other such problems.\n\n"
+                                                                      "Fix the file attributes?"),
+                                                                   QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+  if (userResponse == QMessageBox::Cancel)
+  {
     qDebug() << "User canceled executable launch due to file attributes";
     return false;
   }
-  else if (userResponse == QMessageBox::No) {
+  else if (userResponse == QMessageBox::No)
+  {
     return true;
   }
 
@@ -567,17 +621,21 @@ bool DiagnoseBasic::fileAttributes(const QString &executable) const
 
   // Start iterating through files fixing problems
   bool success = true;
-  for (int i = 0; i < filesToFix.length(); i++) {
+  for (int i = 0; i < filesToFix.length(); i++)
+  {
     if (!fixFileAttributes(filesToFix[i]))
       success = false;
     dialog.setValue(i);
   }
 
-  if (!success) {
+  if (!success)
+  {
     if (QMessageBox::question(nullptr, tr("Unable to set file attributes"),
-          tr("Mod Organizer was unable to fix the file attributes of at least one file.\n\n"
-             "Continue launching %1?").arg(executable),
-          QMessageBox::Yes | QMessageBox::No) == QMessageBox::No) {
+                              tr("Mod Organizer was unable to fix the file attributes of at least one file.\n\n"
+                                 "Continue launching %1?")
+                                  .arg(executable),
+                              QMessageBox::Yes | QMessageBox::No) == QMessageBox::No)
+    {
       return false;
     }
   }
@@ -589,25 +647,32 @@ std::vector<unsigned int> DiagnoseBasic::activeProblems() const
 {
   std::vector<unsigned int> result;
 
-  if (m_MOInfo->pluginSetting(name(), "check_errorlog").toBool() && errorReported()) {
+  if (m_MOInfo->pluginSetting(name(), "check_errorlog").toBool() && errorReported())
+  {
     result.push_back(PROBLEM_ERRORLOG);
   }
-  if (m_MOInfo->pluginSetting(name(), "check_overwrite").toBool() && overwriteFiles()) {
+  if (m_MOInfo->pluginSetting(name(), "check_overwrite").toBool() && overwriteFiles())
+  {
     result.push_back(PROBLEM_OVERWRITE);
   }
-  if (m_MOInfo->pluginSetting(name(), "check_font").toBool() && invalidFontConfig()) {
+  if (m_MOInfo->pluginSetting(name(), "check_font").toBool() && invalidFontConfig())
+  {
     result.push_back(PROBLEM_INVALIDFONT);
   }
-  if (m_MOInfo->pluginSetting(name(), "check_conflict").toBool() && nitpickInstalled()) {
+  if (m_MOInfo->pluginSetting(name(), "check_conflict").toBool() && nitpickInstalled())
+  {
     result.push_back(PROBLEM_NITPICKINSTALLED);
   }
-  if (m_MOInfo->pluginSetting(name(), "check_missingmasters").toBool() && missingMasters()) {
+  if (m_MOInfo->pluginSetting(name(), "check_missingmasters").toBool() && missingMasters())
+  {
     result.push_back(PROBLEM_MISSINGMASTERS);
   }
-  if (m_MOInfo->pluginSetting(name(), "check_alternategames").toBool() && alternateGame()) {
+  if (m_MOInfo->pluginSetting(name(), "check_alternategames").toBool() && alternateGame())
+  {
     result.push_back(PROBLEM_ALTERNATE);
   }
-  if (QFile::exists(m_MOInfo->profilePath() + "/profile_tweaks.ini")) {
+  if (QFile::exists(m_MOInfo->profilePath() + "/profile_tweaks.ini"))
+  {
     result.push_back(PROBLEM_PROFILETWEAKS);
   }
 
@@ -616,81 +681,86 @@ std::vector<unsigned int> DiagnoseBasic::activeProblems() const
 
 QString DiagnoseBasic::shortDescription(unsigned int key) const
 {
-  switch (key) {
-    case PROBLEM_ERRORLOG:
-      return tr("There was an error reported recently");
-    case PROBLEM_OVERWRITE:
-      return tr("There are files in your Overwrite mod directory");
-    case PROBLEM_INVALIDFONT:
-      return tr("Your font configuration may be broken");
-    case PROBLEM_NITPICKINSTALLED:
-      return tr("Nitpick installed");
-    case PROBLEM_PROFILETWEAKS:
-      return tr("INI Tweaks overwritten");
-    case PROBLEM_MISSINGMASTERS:
-      return tr("Missing Masters");
-    case PROBLEM_ALTERNATE:
-      return tr("At least one unverified mod is using an alternative game source");
-    default:
-      throw MyException(tr("invalid problem key %1").arg(key));
+  switch (key)
+  {
+  case PROBLEM_ERRORLOG:
+    return tr("There was an error reported recently");
+  case PROBLEM_OVERWRITE:
+    return tr("There are files in your Overwrite mod directory");
+  case PROBLEM_INVALIDFONT:
+    return tr("Your font configuration may be broken");
+  case PROBLEM_NITPICKINSTALLED:
+    return tr("Nitpick installed");
+  case PROBLEM_PROFILETWEAKS:
+    return tr("INI Tweaks overwritten");
+  case PROBLEM_MISSINGMASTERS:
+    return tr("Missing Masters");
+  case PROBLEM_ALTERNATE:
+    return tr("At least one unverified mod is using an alternative game source");
+  default:
+    throw MyException(tr("invalid problem key %1").arg(key));
   }
 }
 
 QString DiagnoseBasic::fullDescription(unsigned int key) const
 {
-  switch (key) {
-    case PROBLEM_ERRORLOG:
-      return "<code>" + m_ErrorMessage.replace("\n", "<br>") + "</code>";
-    case PROBLEM_OVERWRITE:
-      return tr("There are currently files in your <span style=\"color: red;\"><i>Overwrite</i></span> directory. These files are typically newly created files, usually generated by an external mod tool (i.e. Wrye Bash, xEdit, FNIS, ...). Creation Club ESL files will also end up here when downloaded. Any files in <span style=\"font-weight: bold;\">Overwrite</span> will take top priority when loading your mod files and will always overwrite any other mod in your profile.<br>"
-				"<br>"
-                "It is recommended that you review the files in <span style=\"font-weight: bold;\">Overwrite</span> and move any relevant files to a new or existing mod. You can do this by double-clicking the <span style=\"font-weight: bold;\">Overwrite</span> mod and dragging files from the Overwrite window to a mod entry in the main mod list. It is also possible to move all current <span style=\"font-weight: bold;\">Overwrite</span> files to a new mod by right-clicking on the Overwrite mod.<br>"
-		        "<br>"
-				"Not all files in <span style=\"font-weight: bold;\">Overwrite</span> need to be removed, but there are several reasons to do so. Some generated files will be directly related to the active mods in your profile and will be incompatible with different mod setups. Since <span style=\"font-weight: bold;\">Overwrite</span> is always active, this could cause conflicts between profiles. Additionally, moving relevant game files into a normal mod will give you greater control over those files. Some files can live safely in <span style=\"font-weight: bold;\">Overwrite</span>, such as basic logs and cache files. It is up to you to understand how best to manage these files.<br>"
-                "<br>"
-				"If you do not wish to see this warning and understand how to handle your <span style=\"font-weight: bold;\">Overwrite</span> directory, you can open the Mod Organizer settings and disable this warning under the \"Diagnose Basic\" plugin configuration.");
-    case PROBLEM_INVALIDFONT:
-      return tr("Your current configuration seems to reference a font that is not installed. You may see only boxes instead of letters.<br>"
-                "The font configuration is in Data\\interface\\fontconfig.txt. Most likely you have a broken installation of a font replacer mod.");
-    case PROBLEM_NITPICKINSTALLED:
-      return tr("You have the nitpick skse plugin installed. This plugin is not needed with Mod Organizer because MO already offers the same functionality. "
-                "Worse: The two solutions may conflict so it's strongly suggested you remove this plugin.");
-    case PROBLEM_PROFILETWEAKS: {
-      QString fileContent = readFileText(m_MOInfo->profilePath() + "/profile_tweaks.ini");
-      return tr("Settings provided in ini tweaks have been overwritten in-game or in an applications.<br>"
-                "These overwrites are stored in a separate file (<i>profile_tweaks.ini</i> within the profile directory)<br>"
-                "to keep ini-tweaks in their original state but you should really get rid of this file as there is<br>"
-                "no tool support in MO to work on it. <br>"
-                "Advice: Copy settings you want to keep to an appropriate ini tweak, then delete <i>profile_tweaks.ini</i>.<br>"
-                "Hitting the <i>Fix</i> button will delete that file")
-             + "<hr><i>profile_tweaks.ini:</i><pre>" + fileContent + "</pre>";
-    } break;
-    case PROBLEM_MISSINGMASTERS: {
-	  QString masterInfo;
-	  for (auto master : m_MissingMasters) {
-		  masterInfo += "<tr>";
-		  masterInfo += "<td style=\"padding-left: 20px\">" + master + "</td>";
-		  masterInfo += "<td style=\"padding-left: 20px\">" + SetJoin(m_PluginChildren[master], ", ") + "</td>";
-		  masterInfo += "</tr>";
-
-	  }
-      return tr("The masters for some plugins (esp/esl/esm) are not enabled.<br>"
-                "The game will crash unless you install and enable the following plugins: ")
-             + "<br/><table><tr>"
-		     + "<th style=\"padding-left: 20px; text-align: left\">" + tr("Master") + "</th>"
-		     + "<th style=\"padding-left: 20px; text-align: left\">" + tr("Required By") + "</th></tr>"
-		     + masterInfo + "</table>";
-    } break;
-    case PROBLEM_ALTERNATE: {
-      return tr("You have at least one active mod installed from an alternative game source.<br>"
-                "This means that the mod was downloaded from a game source which does not match<br>"
-                "the expected primary game.<br><br>"
-                "Depending on the type of mod, this may require converting various files to run correctly.<br><br>"
-                "Advice: Once you have verified the mod is working correctly, you can use the context menu<br>"
-                "and select \"Mark as converted/working\" to remove the flag and warning.");
-    } break;
-    default:
-      throw MyException(tr("invalid problem key %1").arg(key));
+  switch (key)
+  {
+  case PROBLEM_ERRORLOG:
+    return "<code>" + m_ErrorMessage.replace("\n", "<br>") + "</code>";
+  case PROBLEM_OVERWRITE:
+    return tr("There are currently files in your <span style=\"color: red;\"><i>Overwrite</i></span> directory. These files are typically newly created files, usually generated by an external mod tool (i.e. Wrye Bash, xEdit, FNIS, ...). Creation Club ESL files will also end up here when downloaded. Any files in <span style=\"font-weight: bold;\">Overwrite</span> will take top priority when loading your mod files and will always overwrite any other mod in your profile.<br>"
+              "<br>"
+              "It is recommended that you review the files in <span style=\"font-weight: bold;\">Overwrite</span> and move any relevant files to a new or existing mod. You can do this by double-clicking the <span style=\"font-weight: bold;\">Overwrite</span> mod and dragging files from the Overwrite window to a mod entry in the main mod list. It is also possible to move all current <span style=\"font-weight: bold;\">Overwrite</span> files to a new mod by right-clicking on the Overwrite mod.<br>"
+              "<br>"
+              "Not all files in <span style=\"font-weight: bold;\">Overwrite</span> need to be removed, but there are several reasons to do so. Some generated files will be directly related to the active mods in your profile and will be incompatible with different mod setups. Since <span style=\"font-weight: bold;\">Overwrite</span> is always active, this could cause conflicts between profiles. Additionally, moving relevant game files into a normal mod will give you greater control over those files. Some files can live safely in <span style=\"font-weight: bold;\">Overwrite</span>, such as basic logs and cache files. It is up to you to understand how best to manage these files.<br>"
+              "<br>"
+              "If you do not wish to see this warning and understand how to handle your <span style=\"font-weight: bold;\">Overwrite</span> directory, you can open the Mod Organizer settings and disable this warning under the \"Diagnose Basic\" plugin configuration.");
+  case PROBLEM_INVALIDFONT:
+    return tr("Your current configuration seems to reference a font that is not installed. You may see only boxes instead of letters.<br>"
+              "The font configuration is in Data\\interface\\fontconfig.txt. Most likely you have a broken installation of a font replacer mod.");
+  case PROBLEM_NITPICKINSTALLED:
+    return tr("You have the nitpick skse plugin installed. This plugin is not needed with Mod Organizer because MO already offers the same functionality. "
+              "Worse: The two solutions may conflict so it's strongly suggested you remove this plugin.");
+  case PROBLEM_PROFILETWEAKS:
+  {
+    QString fileContent = readFileText(m_MOInfo->profilePath() + "/profile_tweaks.ini");
+    return tr("Settings provided in ini tweaks have been overwritten in-game or in an applications.<br>"
+              "These overwrites are stored in a separate file (<i>profile_tweaks.ini</i> within the profile directory)<br>"
+              "to keep ini-tweaks in their original state but you should really get rid of this file as there is<br>"
+              "no tool support in MO to work on it. <br>"
+              "Advice: Copy settings you want to keep to an appropriate ini tweak, then delete <i>profile_tweaks.ini</i>.<br>"
+              "Hitting the <i>Fix</i> button will delete that file") +
+           "<hr><i>profile_tweaks.ini:</i><pre>" + fileContent + "</pre>";
+  }
+  break;
+  case PROBLEM_MISSINGMASTERS:
+  {
+    QString masterInfo;
+    for (auto master : m_MissingMasters)
+    {
+      masterInfo += "<tr>";
+      masterInfo += "<td style=\"padding-left: 20px\">" + master + "</td>";
+      masterInfo += "<td style=\"padding-left: 20px\">" + SetJoin(m_PluginChildren[master], ", ") + "</td>";
+      masterInfo += "</tr>";
+    }
+    return tr("The masters for some plugins (esp/esl/esm) are not enabled.<br>"
+              "The game will crash unless you install and enable the following plugins: ") +
+           "<br/><table><tr>" + "<th style=\"padding-left: 20px; text-align: left\">" + tr("Master") + "</th>" + "<th style=\"padding-left: 20px; text-align: left\">" + tr("Required By") + "</th></tr>" + masterInfo + "</table>";
+  }
+  break;
+  case PROBLEM_ALTERNATE:
+  {
+    return tr("You have at least one active mod installed from an alternative game source.<br>"
+              "This means that the mod was downloaded from a game source which does not match<br>"
+              "the expected primary game.<br><br>"
+              "Depending on the type of mod, this may require converting various files to run correctly.<br><br>"
+              "Advice: Once you have verified the mod is working correctly, you can use the context menu<br>"
+              "and select \"Mark as converted/working\" to remove the flag and warning.");
+  }
+  break;
+  default:
+    throw MyException(tr("invalid problem key %1").arg(key));
   }
 }
 
@@ -701,11 +771,14 @@ bool DiagnoseBasic::hasGuidedFix(unsigned int key) const
 
 void DiagnoseBasic::startGuidedFix(unsigned int key) const
 {
-  switch (key) {
-    case PROBLEM_PROFILETWEAKS: {
-      shellDeleteQuiet(m_MOInfo->profilePath() + "/profile_tweaks.ini");
-    } break;
-    default:
-      throw MyException(tr("invalid problem key %1").arg(key));
+  switch (key)
+  {
+  case PROBLEM_PROFILETWEAKS:
+  {
+    shellDeleteQuiet(m_MOInfo->profilePath() + "/profile_tweaks.ini");
+  }
+  break;
+  default:
+    throw MyException(tr("invalid problem key %1").arg(key));
   }
 }
