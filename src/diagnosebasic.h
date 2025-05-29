@@ -20,30 +20,30 @@ along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef DIAGNOSEBASIC_H
 #define DIAGNOSEBASIC_H
 
-#include <QString>
-#include <QSet>
 #include <QRegularExpression>
+#include <QSet>
+#include <QString>
 
+#include <uibase/imodlist.h>
+#include <uibase/imoinfo.h>
 #include <uibase/iplugin.h>
 #include <uibase/iplugindiagnose.h>
-#include <uibase/imoinfo.h>
-#include <uibase/imodlist.h>
 
-class DiagnoseBasic : public QObject, public MOBase::IPlugin, public MOBase::IPluginDiagnose
+class DiagnoseBasic : public QObject,
+                      public MOBase::IPlugin,
+                      public MOBase::IPluginDiagnose
 {
   Q_OBJECT
   Q_INTERFACES(MOBase::IPlugin MOBase::IPluginDiagnose)
-#if QT_VERSION >= QT_VERSION_CHECK(5,0,0)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
   Q_PLUGIN_METADATA(IID "org.tannin.DiagnoseBasic")
 #endif
 
 public:
-
   DiagnoseBasic();
 
-public: // IPlugin
-
-  virtual bool init(MOBase::IOrganizer *moInfo);
+public:  // IPlugin
+  virtual bool init(MOBase::IOrganizer* moInfo);
   virtual QString name() const;
   virtual QString author() const;
   virtual QString description() const;
@@ -51,8 +51,7 @@ public: // IPlugin
   virtual bool isActive() const;
   virtual QList<MOBase::PluginSetting> settings() const;
 
-public: // IPluginDiagnose
-
+public:  // IPluginDiagnose
   virtual std::vector<unsigned int> activeProblems() const;
   virtual QString shortDescription(unsigned int key) const;
   virtual QString fullDescription(unsigned int key) const;
@@ -60,7 +59,6 @@ public: // IPluginDiagnose
   virtual void startGuidedFix(unsigned int key) const;
 
 private:
-
   bool errorReported() const;
   bool overwriteFiles() const;
   bool invalidFontConfig() const;
@@ -68,25 +66,24 @@ private:
   bool assetOrder() const;
   bool missingMasters() const;
   bool alternateGame() const;
-  bool fileAttributes(const QString &executable) const;
+  bool fileAttributes(const QString& executable) const;
 
 private:
-
-  static const unsigned int PROBLEM_ERRORLOG = 1;
-  static const unsigned int PROBLEM_OVERWRITE = 2;
-  static const unsigned int PROBLEM_INVALIDFONT = 3;
+  static const unsigned int PROBLEM_ERRORLOG         = 1;
+  static const unsigned int PROBLEM_OVERWRITE        = 2;
+  static const unsigned int PROBLEM_INVALIDFONT      = 3;
   static const unsigned int PROBLEM_NITPICKINSTALLED = 4;
-  static const unsigned int PROBLEM_PROFILETWEAKS = 7;
-  static const unsigned int PROBLEM_MISSINGMASTERS = 8;
-  static const unsigned int PROBLEM_ALTERNATE = 9;
+  static const unsigned int PROBLEM_PROFILETWEAKS    = 7;
+  static const unsigned int PROBLEM_MISSINGMASTERS   = 8;
+  static const unsigned int PROBLEM_ALTERNATE        = 9;
 
   static const unsigned int NUM_CONTEXT_ROWS = 5;
 
   static const QRegularExpression RE_LOG_FILE;
 
 private:
-
-  struct ListElement {
+  struct ListElement
+  {
     QString espName;
     QString modName;
     int pluginPriority;
@@ -96,20 +93,25 @@ private:
     QSet<QString> relevantScripts;
   };
 
-  struct Move {
+  struct Move
+  {
     ListElement item;
     ListElement reference;
-    enum EType {
+    enum EType
+    {
       BEFORE,
       AFTER
     } type;
-    Move(const ListElement &initItem, const ListElement &initReference, EType initType)
-      : item(initItem), reference(initReference), type(initType) {}
+    Move(const ListElement& initItem, const ListElement& initReference, EType initType)
+        : item(initItem), reference(initReference), type(initType)
+    {}
   };
 
-  struct Sorter {
-    struct {
-      int operator()(const ListElement &lhs, const ListElement &rhs)
+  struct Sorter
+  {
+    struct
+    {
+      int operator()(const ListElement& lhs, const ListElement& rhs)
       {
         return lhs.modPriority < rhs.modPriority;
       }
@@ -118,26 +120,23 @@ private:
     std::vector<Move> moves;
 
     void operator()(std::vector<ListElement> modList);
+
   private:
     void sortGroup(std::vector<ListElement> modList);
   };
 
-
-  friend bool operator<(const Move &lhs, const Move &rhs);
-
-private:
-
-  void topoSort(std::vector<ListElement> &list) const;
-  bool checkEmpty(const QString &path) const;
+  friend bool operator<(const Move& lhs, const Move& rhs);
 
 private:
+  void topoSort(std::vector<ListElement>& list) const;
+  bool checkEmpty(const QString& path) const;
 
-  MOBase::IOrganizer *m_MOInfo;
+private:
+  MOBase::IOrganizer* m_MOInfo;
   mutable QString m_ErrorMessage;
   mutable QString m_NewestModlistBackup;
   mutable std::set<QString> m_MissingMasters;
   mutable std::map<QString, std::set<QString>> m_PluginChildren;
-
 };
 
-#endif // DIAGNOSEBASIC_H
+#endif  // DIAGNOSEBASIC_H
